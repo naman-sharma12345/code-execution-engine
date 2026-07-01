@@ -1,19 +1,34 @@
 /**
  * ProblemSidebar — left rail with problems list, leaderboard, submission history.
+ *
+ * Design:
+ *   - Section headers are quiet (small caps, mono, muted) — they label
+ *     groups, not demand attention.
+ *   - Problem rows show a difficulty DOT (not text) — color is enough.
+ *     Selected problem gets a 2px violet left-rail.
+ *   - Leaderboard is compact: rank number + username + accepted count.
+ *   - Recent submissions: problem title + verdict dot + small metadata.
+ *   - Each section can collapse independently.
  */
 'use client'
 
+import { useState } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { VerdictBadge } from './verdict-badge'
+import { STATUS_COLORS, type SubmissionStatus } from '@/domain/enums'
 import type { ProblemListItem, SubmissionListItem, LeaderboardEntry } from '@/lib/api'
-import { Trophy, ListChecks, History, Flame } from 'lucide-react'
 
-const DIFFICULTY_COLORS: Record<string, string> = {
-  EASY: 'text-emerald-400',
-  MEDIUM: 'text-amber-400',
-  HARD: 'text-rose-400',
+const DIFFICULTY_DOT: Record<string, string> = {
+  EASY: 'bg-emerald-400',
+  MEDIUM: 'bg-amber-400',
+  HARD: 'bg-rose-400',
 }
 
 export function ProblemSidebar({
@@ -32,145 +47,201 @@ export function ProblemSidebar({
   onSelectSubmission: (id: string) => void
 }) {
   return (
-    <aside className="w-72 border-r border-border bg-card/30 flex flex-col shrink-0">
-      {/* Problems list */}
-      <Section icon={<ListChecks className="w-3.5 h-3.5" />} title="Problems" count={problems.length}>
-        <div className="space-y-0.5">
-          {problems.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => onSelectProblem(p.id)}
-              className={cn(
-                'w-full text-left px-2.5 py-2 rounded-md text-xs transition-colors group',
-                'hover:bg-accent/50',
-                selectedProblemId === p.id
-                  ? 'bg-primary/10 text-primary border-l-2 border-primary'
-                  : 'border-l-2 border-transparent'
+    <aside className="w-72 border-r border-border bg-sidebar/40 flex flex-col shrink-0">
+      <ScrollArea className="flex-1 scrollbar-xfine">
+        <div className="py-2">
+          {/* Problems list */}
+          <Section title="Problems" count={problems.length} defaultOpen>
+            <div className="space-y-px px-1.5">
+              {problems.length === 0 && (
+                <p className="text-[11px] text-muted-foreground/60 italic px-2.5 py-3">
+                  No problems loaded.
+                </p>
               )}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-medium truncate">{p.title}</span>
-                <span className={cn('text-[10px] font-mono shrink-0', DIFFICULTY_COLORS[p.difficulty])}>
-                  {p.difficulty}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground font-mono">
-                <span>{p.totalTestCases} tests</span>
-                <span>·</span>
-                <span>{p.timeLimit}ms</span>
-                <span>·</span>
-                <span>{p.memoryLimit}MB</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </Section>
-
-      {/* Leaderboard */}
-      <Section icon={<Trophy className="w-3.5 h-3.5" />} title="Leaderboard" count={leaderboard.length}>
-        <div className="space-y-1">
-          {leaderboard.slice(0, 5).map((u, i) => (
-            <div
-              key={u.id}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent/50"
-            >
-              <span
-                className={cn(
-                  'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold font-mono shrink-0',
-                  i === 0
-                    ? 'bg-amber-500/20 text-amber-400'
-                    : i === 1
-                    ? 'bg-slate-400/20 text-slate-300'
-                    : i === 2
-                    ? 'bg-orange-700/20 text-orange-400'
-                    : 'bg-muted/30 text-muted-foreground'
-                )}
-              >
-                {i + 1}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium truncate">{u.username}</span>
-                  {u.tier === 'PREMIUM' && (
-                    <Flame className="w-2.5 h-2.5 text-amber-400 shrink-0" fill="currentColor" />
-                  )}
-                </div>
-                <div className="text-[10px] text-muted-foreground font-mono">
-                  {u.accepted}/{u.total} · {u.acceptanceRate}%
-                </div>
-              </div>
+              {problems.map((p) => {
+                const isActive = selectedProblemId === p.id
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => onSelectProblem(p.id)}
+                    className={cn(
+                      'group w-full text-left pl-3 pr-2.5 py-2 rounded-md text-xs transition-colors relative',
+                      isActive
+                        ? 'bg-primary/12 text-foreground'
+                        : 'text-foreground/85 hover:bg-accent/60 hover:text-foreground'
+                    )}
+                  >
+                    {/* Active rail */}
+                    <span
+                      className={cn(
+                        'absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full transition-colors',
+                        isActive ? 'bg-primary' : 'bg-transparent'
+                      )}
+                    />
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {/* Difficulty dot */}
+                      <span
+                        className={cn(
+                          'inline-block w-1.5 h-1.5 rounded-full shrink-0',
+                          DIFFICULTY_DOT[p.difficulty] ?? 'bg-muted-foreground'
+                        )}
+                        title={p.difficulty}
+                      />
+                      <span className="font-medium truncate flex-1">{p.title}</span>
+                      <span className="text-[10px] text-muted-foreground/60 font-mono shrink-0 tabular-nums">
+                        {p.totalTestCases}
+                      </span>
+                    </div>
+                    {/* Hover-only metadata — keeps the row clean by default */}
+                    <div className="flex items-center gap-1.5 mt-0.5 pl-3.5 text-[10px] text-muted-foreground/55 font-mono">
+                      <span>{p.timeLimit}ms</span>
+                      <span className="text-muted-foreground/30">·</span>
+                      <span>{p.memoryLimit}MB</span>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
-          ))}
-        </div>
-      </Section>
+          </Section>
 
-      {/* Recent submissions */}
-      <Section
-        icon={<History className="w-3.5 h-3.5" />}
-        title="Recent Submissions"
-        count={recentSubmissions.length}
-        fillRemaining
-      >
-        <ScrollArea className="h-full scrollbar-thin">
-          <div className="space-y-1 pr-2">
-            {recentSubmissions.length === 0 && (
-              <p className="text-[11px] text-muted-foreground italic px-2 py-3 text-center">
-                No submissions yet
-              </p>
-            )}
-            {recentSubmissions.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => onSelectSubmission(s.id)}
-                className="w-full text-left px-2 py-1.5 rounded-md hover:bg-accent/50 transition-colors group"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-medium truncate">{s.problem.title}</span>
-                  <VerdictBadge status={s.status} size="sm" />
+          {/* Leaderboard */}
+          <Section title="Leaderboard" count={leaderboard.length} defaultOpen>
+            <div className="space-y-px px-1.5">
+              {leaderboard.slice(0, 8).map((u, i) => (
+                <div
+                  key={u.id}
+                  className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md hover:bg-accent/40 transition-colors"
+                >
+                  <span
+                    className={cn(
+                      'inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-mono font-semibold shrink-0 tabular-nums',
+                      i === 0
+                        ? 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/25'
+                        : i === 1
+                        ? 'bg-slate-400/15 text-slate-300 ring-1 ring-slate-400/20'
+                        : i === 2
+                        ? 'bg-orange-600/15 text-orange-300 ring-1 ring-orange-600/25'
+                        : 'text-muted-foreground/70'
+                    )}
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[12px] font-medium truncate">{u.username}</span>
+                      {u.tier === 'PREMIUM' && (
+                        <span className="inline-block w-1 h-1 rounded-full bg-amber-400 shrink-0" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-[11px] font-mono font-medium tabular-nums">
+                      {u.accepted}
+                      <span className="text-muted-foreground/50">/{u.total}</span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground/60 font-mono tabular-nums">
+                      {u.acceptanceRate}%
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground font-mono">
-                  <span>{s.user.username}</span>
-                  <span>·</span>
-                  <span>{s.language}</span>
-                  <span>·</span>
-                  <span>{s.executionTime}ms</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </ScrollArea>
-      </Section>
+              ))}
+            </div>
+          </Section>
+
+          {/* Recent submissions */}
+          <Section
+            title="Recent Submissions"
+            count={recentSubmissions.length}
+            defaultOpen
+          >
+            <div className="space-y-px px-1.5 pb-3">
+              {recentSubmissions.length === 0 && (
+                <p className="text-[11px] text-muted-foreground/60 italic px-2.5 py-3">
+                  No submissions yet — submit a solution to populate this list.
+                </p>
+              )}
+              {recentSubmissions.map((s) => {
+                const dotColor = STATUS_COLORS[s.status as SubmissionStatus] ?? '#6b7280'
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => onSelectSubmission(s.id)}
+                    className="group w-full text-left px-2.5 py-1.5 rounded-md hover:bg-accent/40 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: dotColor }}
+                      />
+                      <span className="text-[12px] font-medium truncate flex-1">
+                        {s.problem.title}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground/60 font-mono shrink-0 tabular-nums">
+                        {s.executionTime}ms
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5 pl-3.5 text-[10px] text-muted-foreground/55 font-mono">
+                      <span className="truncate">{s.user.username}</span>
+                      <span className="text-muted-foreground/30">·</span>
+                      <span>{s.language}</span>
+                      <span className="text-muted-foreground/30">·</span>
+                      <span className="tabular-nums">
+                        {s.testCasesPassed}/{s.totalTestCases}
+                      </span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </Section>
+        </div>
+      </ScrollArea>
     </aside>
   )
 }
 
+/* ─── Section: collapsible group with a quiet header ─────────────────── */
 function Section({
-  icon,
   title,
   count,
+  defaultOpen = true,
   children,
-  fillRemaining = false,
 }: {
-  icon: React.ReactNode
   title: string
   count?: number
+  defaultOpen?: boolean
   children: React.ReactNode
-  fillRemaining?: boolean
 }) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className={cn('border-b border-border last:border-b-0', fillRemaining ? 'flex-1 min-h-0 flex flex-col' : '')}>
-      <div className="flex items-center justify-between px-3 py-2 sticky top-0 bg-card/80 backdrop-blur-sm z-10">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {icon}
-          {title}
-        </div>
-        {count !== undefined && (
-          <Badge variant="secondary" className="h-4 text-[10px] px-1.5 font-mono">
-            {count}
-          </Badge>
-        )}
-      </div>
-      <div className={cn('px-1.5 pb-2', fillRemaining ? 'flex-1 min-h-0' : '')}>{children}</div>
-    </div>
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="border-b border-border/60 last:border-b-0"
+    >
+      <CollapsibleTrigger asChild>
+        <button
+          className="group flex items-center justify-between w-full px-3 py-2 hover:bg-accent/30 transition-colors"
+        >
+          <div className="flex items-center gap-1.5 text-[10px] font-mono font-medium uppercase tracking-wider text-muted-foreground/80">
+            <ChevronRight
+              className={cn(
+                'w-3 h-3 transition-transform text-muted-foreground/50',
+                open && 'rotate-90'
+              )}
+            />
+            {title}
+          </div>
+          {count !== undefined && (
+            <span className="text-[10px] font-mono text-muted-foreground/50 tabular-nums">
+              {count}
+            </span>
+          )}
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="pt-0.5 pb-1">{children}</div>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }

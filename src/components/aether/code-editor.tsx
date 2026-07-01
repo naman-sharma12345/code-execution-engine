@@ -1,10 +1,18 @@
 /**
- * CodeEditor — language selector + code editor + submit/run controls.
+ * CodeEditor — language selector + code editor + submit controls.
  *
- * Uses react-syntax-highlighter for read-only highlighting of the current
- * code in a parallel layer beneath a transparent textarea. This gives us
- * syntax highlighting without losing native text editing behaviors (cursor,
- * selection, copy/paste, IME composition).
+ * Design:
+ *   - Editor chrome: a filename tab strip (like VS Code) with the active
+ *     file name, plus a small dot indicator for the language family.
+ *   - Toolbar is minimal: language selector on the left, reset + submit
+ *     on the right. Reset is a small icon button; Submit is prominent.
+ *   - Submit button has a clear loading state with the live status text.
+ *   - Tab key inserts 2 spaces. Cmd/Ctrl+Enter submits.
+ *
+ * Implementation:
+ *   react-syntax-highlighter renders a read-only highlighted layer; a
+ *   transparent textarea sits on top to capture input. This preserves
+ *   native text-editing behavior (cursor, selection, IME, paste).
  */
 'use client'
 
@@ -19,15 +27,28 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Play, Send, RotateCcw, Loader2 } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { RotateCcw, Loader2, Play } from 'lucide-react'
 import type { Language, SubmissionStatus } from '@/domain/enums'
-import { LANGUAGE_LABELS, ALL_LANGUAGES } from '@/domain/enums'
+import { LANGUAGE_LABELS, ALL_LANGUAGES, LANGUAGE_FILE_EXTENSIONS } from '@/domain/enums'
+import { cn } from '@/lib/utils'
 
 const SYNTAX_LANG: Record<Language, string> = {
   javascript: 'javascript',
   python: 'python',
   cpp: 'cpp',
   java: 'java',
+}
+
+const LANGUAGE_ACCENT: Record<Language, string> = {
+  javascript: 'bg-amber-400',
+  python: 'bg-sky-400',
+  cpp: 'bg-blue-400',
+  java: 'bg-rose-400',
 }
 
 // Default starter code per language — uses fd 0 for stdin (most portable)
@@ -115,69 +136,116 @@ export function CodeEditor({
     }
   }
 
-  const isBusy = currentStatus === 'PENDING' || currentStatus === 'COMPILING' || currentStatus === 'RUNNING'
+  const isBusy =
+    currentStatus === 'PENDING' ||
+    currentStatus === 'COMPILING' ||
+    currentStatus === 'RUNNING'
+
+  const fileName = `solution.${LANGUAGE_FILE_EXTENSIONS[language]}`
 
   return (
-    <div className="flex flex-col h-full bg-card/20">
-      {/* Editor toolbar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0 bg-card/40">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider">
-            Solution
-          </span>
+    <div className="flex flex-col h-full bg-card/30">
+      {/* ─── Editor chrome: filename tab strip ───────────────────── */}
+      <div className="flex items-center justify-between pl-2 pr-2 border-b border-border shrink-0 bg-sidebar/40 h-9">
+        {/* Filename tab — looks like a VS Code editor tab */}
+        <div className="flex items-center h-full">
+          <div className="flex items-center gap-2 h-full px-3 border-r border-border bg-card/70 -mb-px border-b-2 border-b-primary/70 relative">
+            <span
+              className={cn(
+                'inline-block w-1.5 h-1.5 rounded-full',
+                LANGUAGE_ACCENT[language]
+              )}
+            />
+            <span className="text-[12px] font-mono text-foreground/90">
+              {fileName}
+            </span>
+            {/* Modified indicator — shown when code differs from starter */}
+            {code !== STARTER_CODE[language] && (
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/80 ml-0.5" />
+            )}
+          </div>
+          {/* Spacer tab (empty) — gives the editor-chrome feel */}
+          <div className="h-full px-3 flex items-center text-[11px] font-mono text-muted-foreground/40">
+            <span>untitled</span>
+          </div>
+        </div>
+
+        {/* Right side: language + actions */}
+        <div className="flex items-center gap-1.5">
           <Select value={language} onValueChange={(v) => onLanguageChange(v as Language)}>
-            <SelectTrigger className="h-7 w-[170px] text-xs font-mono">
+            <SelectTrigger className="h-7 w-[150px] text-[11px] font-mono bg-secondary/40 hover:bg-secondary/70 border-border/60 transition-colors gap-1.5">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {ALL_LANGUAGES.map((l) => (
-                <SelectItem key={l} value={l} className="text-xs font-mono">
-                  {LANGUAGE_LABELS[l]}
+                <SelectItem key={l} value={l} className="text-[11px] font-mono gap-2">
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        'inline-block w-1.5 h-1.5 rounded-full',
+                        LANGUAGE_ACCENT[l]
+                      )}
+                    />
+                    {LANGUAGE_LABELS[l]}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
 
-        <div className="flex items-center gap-1.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                onClick={onReset}
+                disabled={isSubmitting}
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Reset to starter code</TooltipContent>
+          </Tooltip>
+
           <Button
-            variant="ghost"
             size="sm"
-            className="h-7 text-[11px] font-mono"
-            onClick={onReset}
-            disabled={isSubmitting}
-          >
-            <RotateCcw className="w-3 h-3 mr-1" />
-            Reset
-          </Button>
-          <Button
-            size="sm"
-            className="h-7 text-[11px] font-mono"
+            className={cn(
+              'h-7 px-3 text-[12px] font-medium gap-1.5 transition-all',
+              'bg-primary hover:bg-primary/90 text-primary-foreground',
+              'disabled:opacity-60',
+              (isSubmitting || isBusy) && 'bg-primary/80'
+            )}
             onClick={onSubmit}
             disabled={isSubmitting || isBusy}
           >
             {isSubmitting || isBusy ? (
               <>
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                {currentStatus ?? 'Queued…'}
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span className="font-mono text-[11px] uppercase tracking-wider">
+                  {currentStatus ?? 'Queued'}
+                </span>
               </>
             ) : (
               <>
-                <Send className="w-3 h-3 mr-1" />
-                Submit (⌘⏎)
+                <Play className="w-3.5 h-3.5" fill="currentColor" />
+                Submit
+                <span className="hidden sm:inline text-[10px] font-mono opacity-70 ml-0.5">
+                  ⌘⏎
+                </span>
               </>
             )}
           </Button>
         </div>
       </div>
 
-      {/* Editor area — textarea overlaid on syntax highlighter */}
-      <div className="flex-1 relative overflow-hidden">
+      {/* ─── Editor area — textarea overlaid on syntax highlighter ── */}
+      <div className="flex-1 relative overflow-hidden bg-background">
         {/* Line numbers gutter */}
-        <div className="absolute left-0 top-0 bottom-0 w-10 bg-card/30 border-r border-border flex pt-3 pb-3">
-          <div className="flex-1 text-right pr-2 text-[11px] font-mono text-muted-foreground/60 select-none overflow-hidden">
+        <div className="absolute left-0 top-0 bottom-0 w-11 bg-sidebar/30 border-r border-border/60 flex pt-3 pb-3 select-none">
+          <div className="flex-1 text-right pr-2.5 text-[11px] font-mono text-muted-foreground/40 overflow-hidden terminal-text">
             {Array.from({ length: lineCount }, (_, i) => (
-              <div key={i} className="leading-[1.6]">
+              <div key={i} className="leading-[1.6] tabular-nums">
                 {i + 1}
               </div>
             ))}
@@ -185,7 +253,7 @@ export function CodeEditor({
         </div>
 
         {/* Syntax-highlighted layer */}
-        <div className="absolute inset-0 left-10 overflow-auto scrollbar-thin">
+        <div className="absolute inset-0 left-11 overflow-auto scrollbar-thin">
           <div className="p-3 min-h-full">
             <SyntaxHighlighter
               language={SYNTAX_LANG[language]}
@@ -219,22 +287,30 @@ export function CodeEditor({
           onChange={(e) => onCodeChange(e.target.value)}
           onKeyDown={handleKeyDown}
           spellCheck={false}
-          className="absolute inset-0 left-10 w-[calc(100%-2.5rem)] h-full bg-transparent text-transparent caret-white resize-none outline-none p-3 code-editor selection:bg-primary/30"
-          style={{ caretColor: 'oklch(0.95 0.005 250)' }}
+          autoCapitalize="off"
+          autoCorrect="off"
+          className="absolute inset-0 left-11 w-[calc(100%-2.75rem)] h-full bg-transparent text-transparent caret-white resize-none outline-none p-3 code-editor selection:bg-primary/30"
+          style={{ caretColor: 'oklch(0.96 0.004 60)' }}
         />
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-t border-border shrink-0 bg-card/40 text-[10px] font-mono text-muted-foreground">
+      {/* ─── Status bar — bottom strip with file info ─────────────── */}
+      <div className="flex items-center justify-between px-3 h-6 border-t border-border shrink-0 bg-sidebar/40 text-[10px] font-mono text-muted-foreground/70 terminal-text">
         <div className="flex items-center gap-3">
-          <span>{lineCount} lines</span>
-          <span>{code.length} chars</span>
-          <span>LF · UTF-8</span>
+          <span className="tabular-nums">
+            Ln {lineCount}, Col 1
+          </span>
+          <span className="text-muted-foreground/30">·</span>
+          <span className="tabular-nums">{code.length} chars</span>
+          <span className="text-muted-foreground/30">·</span>
+          <span>UTF-8</span>
+          <span className="text-muted-foreground/30">·</span>
+          <span>LF</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span>Tab = 2 spaces</span>
-          <span className="text-muted-foreground/50">·</span>
-          <span>⌘⏎ to submit</span>
+        <div className="flex items-center gap-3">
+          <span>Spaces: 2</span>
+          <span className="text-muted-foreground/30">·</span>
+          <span className="text-primary/80">⌘⏎ to submit</span>
         </div>
       </div>
     </div>

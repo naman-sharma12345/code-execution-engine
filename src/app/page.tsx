@@ -3,22 +3,29 @@
  *
  * Layout (desktop):
  *   ┌──────────────────────────────────────────────────────────────┐
- *   │ Header: branding · engine status pills · user picker         │
+ *   │ Header: wordmark · live engine indicator · user picker       │
  *   ├────────────┬─────────────────────────────┬───────────────────┤
  *   │            │  Problem Viewer             │ Execution Panel   │
- *   │  Sidebar   │  (description + samples)    │ (live log + tests)│
- *   │  problems  ├─────────────────────────────┤                   │
- *   │  leaderboard│  Code Editor                │                   │
- *   │  history   │  (textarea + syntax)        │                   │
+ *   │  Sidebar   │  (tabs: Description |       │ (live log + tests │
+ *   │  problems  │   Samples | Notes)          │  + verdict)       │
+ *   │  leaderboard├─────── ↕ drag ─────────────┤                   │
+ *   │  history   │  Code Editor                │                   │
+ *   │            │  (filename tab + textarea)  │                   │
  *   ├────────────┴─────────────────────────────┴───────────────────┤
- *   │ StatsBar: queue · workers · pool · throughput · uptime       │
+ *   │ StatsBar: queue · workers · processed · uptime               │
  *   └──────────────────────────────────────────────────────────────┘
+ *
+ * The center column uses a resizable vertical split (react-resizable-panels)
+ * so the user can drag the divider between the problem statement and the
+ * code editor. The ProblemViewer uses internal tabs (Description / Samples
+ * / Notes) so each section gets the full panel height — fixing the
+ * "problem and example are on top of each other" complaint.
  *
  * State flow:
  *   1. User picks a problem → loads problem + sample test cases.
  *   2. User types code, picks a language, clicks Submit.
  *   3. POST /api/submissions → returns submissionId.
- *   4. useSocket(submissionId) connects to Socket.io, streams events.
+ *   4. useSubmissionStream(submissionId) connects via Socket.io, streams events.
  *   5. ExecutionPanel renders events in real-time.
  *   6. On 'final' event, refresh sidebar history + leaderboard.
  */
@@ -32,6 +39,11 @@ import { ProblemViewer } from '@/components/aether/problem-viewer'
 import { CodeEditor, STARTER_CODE } from '@/components/aether/code-editor'
 import { ExecutionPanel } from '@/components/aether/execution-panel'
 import { StatsBar } from '@/components/aether/stats-bar'
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from '@/components/ui/resizable'
 import { useSubmissionStream } from '@/hooks/use-submission-stream'
 import { api, type ProblemListItem, type ProblemDetail, type User, type SubmissionListItem, type LeaderboardEntry, type EngineStats } from '@/lib/api'
 import type { Language, SubmissionStatus } from '@/domain/enums'
@@ -199,7 +211,7 @@ export default function Home() {
   }, [])
 
   return (
-    <div className="flex flex-col h-screen bg-background bg-grid overflow-hidden">
+    <div className="flex flex-col h-screen bg-background bg-dots overflow-hidden">
       <Header
         users={users}
         currentUser={currentUser}
@@ -217,23 +229,29 @@ export default function Home() {
           onSelectSubmission={handleSelectSubmission}
         />
 
-        {/* Center: problem + code editor */}
+        {/* Center: problem + code editor (resizable vertical split) */}
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex-1 min-h-0">
-            <ProblemViewer problem={problemDetail} />
-          </div>
-          <div className="h-[42%] border-t border-border min-h-0">
-            <CodeEditor
-              language={language}
-              onLanguageChange={handleLanguageChange}
-              code={code}
-              onCodeChange={setCode}
-              onSubmit={handleSubmit}
-              onReset={handleReset}
-              isSubmitting={isSubmitting}
-              currentStatus={currentStatus}
+          <ResizablePanelGroup direction="vertical" className="h-full">
+            <ResizablePanel defaultSize={55} minSize={20} className="min-h-0">
+              <ProblemViewer problem={problemDetail} />
+            </ResizablePanel>
+            <ResizableHandle
+              withHandle
+              className="bg-border/60 hover:bg-primary/40 data-[resize-handle-active]:bg-primary/60 transition-colors"
             />
-          </div>
+            <ResizablePanel defaultSize={45} minSize={25} className="min-h-0">
+              <CodeEditor
+                language={language}
+                onLanguageChange={handleLanguageChange}
+                code={code}
+                onCodeChange={setCode}
+                onSubmit={handleSubmit}
+                onReset={handleReset}
+                isSubmitting={isSubmitting}
+                currentStatus={currentStatus}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
 
         {/* Right: execution panel */}

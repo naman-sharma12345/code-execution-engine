@@ -1,10 +1,19 @@
 /**
- * Header — top bar with branding, user picker, and live engine status.
+ * Header — top bar with branding, a single live status indicator,
+ * and the user picker.
+ *
+ * Design: minimal product header. No cluster of status pills (those
+ * live in the bottom StatsBar now). Just:
+ *   - Wordmark + tagline on the left
+ *   - A single live connection dot in the middle (engine online)
+ *   - User picker on the right
+ *
+ * The "engine online" indicator is the only status signal in the header —
+ * it goes green when stats are flowing, dim when stale.
  */
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Activity, Cpu, Zap, Server } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Select,
   SelectContent,
@@ -13,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { EngineStats, User } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 export function Header({
   users,
@@ -25,56 +35,79 @@ export function Header({
   onUserChange: (u: User) => void
   stats: EngineStats | null
 }) {
+  // Engine is considered "online" if stats updated within the last 5s.
+  // setState happens inside the interval callback (async), not in the
+  // effect body — keeps react-hooks/set-state-in-effect happy.
+  const [isLive, setIsLive] = useState(false)
+  const lastStatsAtRef = useRef(0)
+  useEffect(() => {
+    if (stats) lastStatsAtRef.current = Date.now()
+  }, [stats])
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIsLive(Date.now() - lastStatsAtRef.current < 5000)
+    }, 1000)
+    return () => clearInterval(id)
+  }, [])
+
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-      <div className="flex items-center justify-between px-4 py-2.5 gap-4">
-        {/* Logo + title */}
+    <header className="border-b border-border bg-sidebar/60 backdrop-blur-md shrink-0 z-50">
+      <div className="flex items-center justify-between h-12 px-4">
+        {/* Wordmark */}
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="relative w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-            <Zap className="w-4 h-4 text-primary" fill="currentColor" />
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary animate-pulse-live" />
+          <div className="relative flex items-center justify-center w-6 h-6">
+            {/* Logo mark — a stylized "Æ" made from two strokes */}
+            <svg
+              viewBox="0 0 24 24"
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path
+                d="M4 17 L12 4 L20 17 M7 12 L17 12 M6 17 L18 17"
+                className="text-primary"
+                stroke="url(#ae-grad)"
+              />
+              <defs>
+                <linearGradient id="ae-grad" x1="0" y1="0" x2="24" y2="24">
+                  <stop offset="0%" stopColor="oklch(0.72 0.19 295)" />
+                  <stop offset="100%" stopColor="oklch(0.55 0.20 295)" />
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
-          <div className="min-w-0">
-            <h1 className="text-sm font-semibold tracking-tight truncate">
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <h1 className="text-[13px] font-semibold tracking-tight truncate">
               AetherRun
             </h1>
-            <p className="text-[10px] text-muted-foreground font-mono truncate">
-              distributed code execution engine
-            </p>
+            <span className="text-[11px] text-muted-foreground/70 font-mono hidden sm:inline truncate">
+              code execution engine
+            </span>
           </div>
         </div>
 
-        {/* Engine status pills */}
-        <div className="hidden md:flex items-center gap-1.5 text-[11px] font-mono">
-          <StatusPill
-            icon={<Server className="w-3 h-3" />}
-            label="QUEUE"
-            value={stats ? `${stats.queue.waiting}w / ${stats.queue.active}a` : '—'}
-            color={stats && stats.queue.active > 0 ? 'blue' : 'muted'}
-          />
-          <StatusPill
-            icon={<Cpu className="w-3 h-3" />}
-            label="WORKERS"
-            value={stats ? `${stats.workers.busy}/${stats.workers.count} busy` : '—'}
-            color={stats && stats.workers.busy > 0 ? 'blue' : 'emerald'}
-          />
-          <StatusPill
-            icon={<Activity className="w-3 h-3" />}
-            label="POOL"
-            value={stats ? `${stats.containerPool.idle}/${stats.containerPool.total}` : '—'}
-            color="emerald"
-          />
-          <StatusPill
-            icon={<Zap className="w-3 h-3" />}
-            label="DONE"
-            value={stats ? `${stats.throughput.processed}` : '—'}
-            color="emerald"
-          />
+        {/* Single live status indicator — engine online */}
+        <div className="hidden md:flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
+          <span className="relative flex items-center justify-center w-1.5 h-1.5">
+            <span
+              className={cn(
+                'absolute inline-flex w-1.5 h-1.5 rounded-full',
+                isLive
+                  ? 'bg-emerald-400 animate-pulse-live'
+                  : 'bg-muted-foreground/40'
+              )}
+            />
+          </span>
+          <span className={isLive ? 'text-emerald-400/90' : ''}>
+            {isLive ? 'engine online' : 'connecting…'}
+          </span>
         </div>
 
         {/* User picker */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="text-[10px] text-muted-foreground font-mono hidden sm:block">USER</div>
           <Select
             value={currentUser?.id}
             onValueChange={(v) => {
@@ -82,22 +115,39 @@ export function Header({
               if (u) onUserChange(u)
             }}
           >
-            <SelectTrigger className="h-8 w-[180px] text-xs font-mono">
-              <SelectValue placeholder="Select user…" />
+            <SelectTrigger className="h-8 w-[180px] text-xs gap-1.5 px-2.5 bg-secondary/40 hover:bg-secondary/70 border-border/60 transition-colors">
+              <span className="flex items-center gap-2 min-w-0">
+                <span
+                  className={cn(
+                    'inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-semibold font-mono shrink-0',
+                    currentUser?.subscriptionTier === 'PREMIUM'
+                      ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/30'
+                      : 'bg-muted text-muted-foreground'
+                  )}
+                >
+                  {currentUser?.username?.[0]?.toUpperCase() ?? '?'}
+                </span>
+                <SelectValue placeholder="Select user…" />
+              </span>
             </SelectTrigger>
             <SelectContent>
               {users.map((u) => (
-                <SelectItem key={u.id} value={u.id} className="text-xs font-mono">
+                <SelectItem key={u.id} value={u.id} className="text-xs gap-2">
                   <span className="flex items-center gap-2">
                     <span
-                      className={`inline-block w-1.5 h-1.5 rounded-full ${
-                        u.subscriptionTier === 'PREMIUM' ? 'bg-amber-400' : 'bg-muted-foreground'
-                      }`}
-                    />
-                    {u.username}
-                    <span className="text-[10px] text-muted-foreground">
-                      ({u.subscriptionTier})
+                      className={cn(
+                        'inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-semibold font-mono shrink-0',
+                        u.subscriptionTier === 'PREMIUM'
+                          ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/30'
+                          : 'bg-muted text-muted-foreground'
+                      )}
+                    >
+                      {u.username[0]?.toUpperCase()}
                     </span>
+                    <span className="truncate">{u.username}</span>
+                    {u.subscriptionTier === 'PREMIUM' && (
+                      <span className="text-[10px] text-amber-300/80 font-mono ml-1">PRO</span>
+                    )}
                   </span>
                 </SelectItem>
               ))}
@@ -106,33 +156,5 @@ export function Header({
         </div>
       </div>
     </header>
-  )
-}
-
-function StatusPill({
-  icon,
-  label,
-  value,
-  color,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-  color: 'emerald' | 'blue' | 'amber' | 'muted'
-}) {
-  const colorClasses = {
-    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    blue: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    muted: 'text-muted-foreground bg-muted/30 border-border',
-  }
-  return (
-    <div
-      className={`flex items-center gap-1.5 px-2 py-1 rounded-md border ${colorClasses[color]}`}
-    >
-      {icon}
-      <span className="text-muted-foreground/70">{label}</span>
-      <span className="font-semibold">{value}</span>
-    </div>
   )
 }

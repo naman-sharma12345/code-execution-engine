@@ -43,78 +43,107 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* AetherRun dark theme — competitive-programming aesthetic.
-   Deep slate background, emerald accents for ACCEPTED, and a subtle
-   blue tint for interactive elements. Inspired by LeetCode's dark mode. */
+/* ───────────────────────────────────────────────────────────────────────
+   AetherRun theme — refined charcoal + violet.
+   Inspired by Linear / Vercel dashboard / GitHub Codespaces.
+
+   Palette rationale:
+   - Background is a near-black with a faint warm-violet undertone (L=0.13).
+     This reads as "intentional dark", not "default slate".
+   - Surface elevation comes from L=0.16 (card) and L=0.18 (popover), a
+     subtle 1–2 step gradient instead of jarring panel boundaries.
+   - Single accent: violet (#8b5cf6 / oklch 0.62 0.19 295). Used for
+     primary actions, active tabs, focus rings, selected rows.
+   - Verdict colors remain semantic (green/red/orange/purple/pink), driven
+     by STATUS_COLORS in @/domain/enums — they are never used as the UI
+     primary accent, only for status communication.
+   - Borders are deliberately subtle (L=0.22) so panels read as surfaces
+     rather than as bordered boxes.
+   ─────────────────────────────────────────────────────────────────────── */
 :root {
   --radius: 0.5rem;
-  --background: oklch(0.16 0.015 250);       /* deep slate */
-  --foreground: oklch(0.95 0.005 250);       /* near-white */
-  --card: oklch(0.20 0.015 250);             /* surface */
-  --card-foreground: oklch(0.95 0.005 250);
-  --popover: oklch(0.22 0.015 250);
-  --popover-foreground: oklch(0.95 0.005 250);
-  --primary: oklch(0.70 0.18 152);           /* emerald accent */
-  --primary-foreground: oklch(0.12 0.015 250);
-  --secondary: oklch(0.26 0.015 250);
-  --secondary-foreground: oklch(0.95 0.005 250);
-  --muted: oklch(0.24 0.015 250);
-  --muted-foreground: oklch(0.65 0.01 250);
-  --accent: oklch(0.30 0.02 250);
-  --accent-foreground: oklch(0.95 0.005 250);
-  --destructive: oklch(0.65 0.22 25);
-  --border: oklch(0.28 0.015 250);
-  --input: oklch(0.24 0.015 250);
-  --ring: oklch(0.55 0.13 200);
-  /* Chart palette — distinguishable verdict colors */
-  --chart-1: oklch(0.70 0.18 152);  /* emerald - ACCEPTED */
-  --chart-2: oklch(0.65 0.22 25);   /* red - WRONG/FAILED */
-  --chart-3: oklch(0.72 0.16 70);   /* orange - TLE */
-  --chart-4: oklch(0.62 0.20 300);  /* purple - MLE */
-  --chart-5: oklch(0.65 0.20 350);  /* pink - RTE */
-  --sidebar: oklch(0.18 0.015 250);
-  --sidebar-foreground: oklch(0.95 0.005 250);
-  --sidebar-primary: oklch(0.70 0.18 152);
-  --sidebar-primary-foreground: oklch(0.12 0.015 250);
-  --sidebar-accent: oklch(0.26 0.015 250);
-  --sidebar-accent-foreground: oklch(0.95 0.005 250);
-  --sidebar-border: oklch(0.28 0.015 250);
-  --sidebar-ring: oklch(0.55 0.13 200);
+
+  /* Surfaces */
+  --background: oklch(0.13 0.004 285);
+  --foreground: oklch(0.96 0.004 60);   /* warm off-white */
+
+  --card: oklch(0.16 0.004 285);
+  --card-foreground: oklch(0.96 0.004 60);
+  --popover: oklch(0.17 0.005 285);
+  --popover-foreground: oklch(0.96 0.004 60);
+
+  /* Accent (single, confident) */
+  --primary: oklch(0.62 0.19 295);
+  --primary-foreground: oklch(0.99 0 0);
+
+  /* Neutral surfaces */
+  --secondary: oklch(0.19 0.005 285);
+  --secondary-foreground: oklch(0.96 0.004 60);
+  --muted: oklch(0.18 0.004 285);
+  --muted-foreground: oklch(0.62 0.012 285);
+
+  /* Accent hover surface — tinted with primary for subtle violet glow */
+  --accent: oklch(0.21 0.012 295);
+  --accent-foreground: oklch(0.96 0.004 60);
+
+  --destructive: oklch(0.62 0.20 25);
+
+  /* Subtle borders — readable but quiet */
+  --border: oklch(0.24 0.006 285);
+  --input: oklch(0.20 0.005 285);
+  --ring: oklch(0.62 0.19 295 / 0.55);
+
+  /* Verdict chart palette (kept semantic, tuned for the dark surface) */
+  --chart-1: oklch(0.74 0.16 155);  /* ACCEPTED — emerald */
+  --chart-2: oklch(0.66 0.22 25);   /* WRONG/FAILED — red */
+  --chart-3: oklch(0.75 0.16 65);   /* TLE — orange */
+  --chart-4: oklch(0.66 0.19 295);  /* MLE — violet */
+  --chart-5: oklch(0.70 0.18 350);  /* RTE — pink */
+
+  /* Sidebar is a touch darker than the main bg for separation */
+  --sidebar: oklch(0.115 0.004 285);
+  --sidebar-foreground: oklch(0.96 0.004 60);
+  --sidebar-primary: oklch(0.62 0.19 295);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.21 0.012 295);
+  --sidebar-accent-foreground: oklch(0.96 0.004 60);
+  --sidebar-border: oklch(0.24 0.006 285);
+  --sidebar-ring: oklch(0.62 0.19 295 / 0.55);
 }
 
 .dark {
-  /* Same as :root — we default to dark mode. */
-  --background: oklch(0.16 0.015 250);
-  --foreground: oklch(0.95 0.005 250);
-  --card: oklch(0.20 0.015 250);
-  --card-foreground: oklch(0.95 0.005 250);
-  --popover: oklch(0.22 0.015 250);
-  --popover-foreground: oklch(0.95 0.005 250);
-  --primary: oklch(0.70 0.18 152);
-  --primary-foreground: oklch(0.12 0.015 250);
-  --secondary: oklch(0.26 0.015 250);
-  --secondary-foreground: oklch(0.95 0.005 250);
-  --muted: oklch(0.24 0.015 250);
-  --muted-foreground: oklch(0.65 0.01 250);
-  --accent: oklch(0.30 0.02 250);
-  --accent-foreground: oklch(0.95 0.005 250);
-  --destructive: oklch(0.65 0.22 25);
-  --border: oklch(0.28 0.015 250);
-  --input: oklch(0.24 0.015 250);
-  --ring: oklch(0.55 0.13 200);
-  --chart-1: oklch(0.70 0.18 152);
-  --chart-2: oklch(0.65 0.22 25);
-  --chart-3: oklch(0.72 0.16 70);
-  --chart-4: oklch(0.62 0.20 300);
-  --chart-5: oklch(0.65 0.20 350);
-  --sidebar: oklch(0.18 0.015 250);
-  --sidebar-foreground: oklch(0.95 0.005 250);
-  --sidebar-primary: oklch(0.70 0.18 152);
-  --sidebar-primary-foreground: oklch(0.12 0.015 250);
-  --sidebar-accent: oklch(0.26 0.015 250);
-  --sidebar-accent-foreground: oklch(0.95 0.005 250);
-  --sidebar-border: oklch(0.28 0.015 250);
-  --sidebar-ring: oklch(0.55 0.13 200);
+  /* Default to dark — same values as :root. */
+  --background: oklch(0.13 0.004 285);
+  --foreground: oklch(0.96 0.004 60);
+  --card: oklch(0.16 0.004 285);
+  --card-foreground: oklch(0.96 0.004 60);
+  --popover: oklch(0.17 0.005 285);
+  --popover-foreground: oklch(0.96 0.004 60);
+  --primary: oklch(0.62 0.19 295);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.19 0.005 285);
+  --secondary-foreground: oklch(0.96 0.004 60);
+  --muted: oklch(0.18 0.004 285);
+  --muted-foreground: oklch(0.62 0.012 285);
+  --accent: oklch(0.21 0.012 295);
+  --accent-foreground: oklch(0.96 0.004 60);
+  --destructive: oklch(0.62 0.20 25);
+  --border: oklch(0.24 0.006 285);
+  --input: oklch(0.20 0.005 285);
+  --ring: oklch(0.62 0.19 295 / 0.55);
+  --chart-1: oklch(0.74 0.16 155);
+  --chart-2: oklch(0.66 0.22 25);
+  --chart-3: oklch(0.75 0.16 65);
+  --chart-4: oklch(0.66 0.19 295);
+  --chart-5: oklch(0.70 0.18 350);
+  --sidebar: oklch(0.115 0.004 285);
+  --sidebar-foreground: oklch(0.96 0.004 60);
+  --sidebar-primary: oklch(0.62 0.19 295);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.21 0.012 295);
+  --sidebar-accent-foreground: oklch(0.96 0.004 60);
+  --sidebar-border: oklch(0.24 0.006 285);
+  --sidebar-ring: oklch(0.62 0.19 295 / 0.55);
 }
 
 @layer base {
@@ -125,15 +154,43 @@
     @apply bg-background text-foreground;
     font-feature-settings: "cv11", "ss01";
     font-variation-settings: "opsz" 32;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* Headings use a tighter tracking for that product-tool feel */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.012em;
   }
 }
 
 /* ─── AetherRun custom utilities (Tailwind 4 `@utility` directive) ──── */
 
-/* Custom scrollbar — thin, themed, blends with the dark UI */
+/* Thin, themed scrollbar — blends with the dark UI */
 @utility scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: oklch(0.35 0.015 250) transparent;
+  scrollbar-color: oklch(0.32 0.006 285 / 0.6) transparent;
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: oklch(0.32 0.006 285 / 0.6);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: oklch(0.42 0.008 285 / 0.8);
+  }
+}
+
+/* Even thinner scrollbar for tight spaces (terminal panes) */
+@utility scrollbar-xfine {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.32 0.006 285 / 0.45) transparent;
   &::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -142,46 +199,66 @@
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background-color: oklch(0.35 0.015 250);
+    background-color: oklch(0.32 0.006 285 / 0.45);
     border-radius: 3px;
   }
   &::-webkit-scrollbar-thumb:hover {
-    background-color: oklch(0.45 0.015 250);
+    background-color: oklch(0.42 0.008 285 / 0.7);
   }
 }
 
-/* Subtle grid background — gives the "execution engine" feel */
+/* Subtle dotted background — Linear-style ambient texture.
+   Used as the page backdrop, very low contrast. */
+@utility bg-dots {
+  background-image: radial-gradient(
+    oklch(0.50 0.005 285 / 0.10) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  background-position: -11px -11px;
+}
+
+/* Faint grid background — kept available but quieter than before */
 @utility bg-grid {
   background-image:
-    linear-gradient(to right, oklch(0.25 0.015 250 / 0.4) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(0.25 0.015 250 / 0.4) 1px, transparent 1px);
-  background-size: 24px 24px;
+    linear-gradient(to right, oklch(0.30 0.004 285 / 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0.30 0.004 285 / 0.18) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
-/* Glow effects for active status badges */
+/* Glow effects for active status banners — used very sparingly */
+@utility glow-violet {
+  box-shadow: 0 0 18px oklch(0.62 0.19 295 / 0.35);
+}
 @utility glow-emerald {
-  box-shadow: 0 0 12px oklch(0.70 0.18 152 / 0.5);
+  box-shadow: 0 0 18px oklch(0.74 0.16 155 / 0.35);
 }
 @utility glow-red {
-  box-shadow: 0 0 12px oklch(0.65 0.22 25 / 0.5);
+  box-shadow: 0 0 18px oklch(0.66 0.22 25 / 0.35);
 }
 @utility glow-amber {
-  box-shadow: 0 0 12px oklch(0.72 0.16 70 / 0.5);
-}
-@utility glow-blue {
-  box-shadow: 0 0 12px oklch(0.55 0.13 200 / 0.5);
+  box-shadow: 0 0 18px oklch(0.75 0.16 65 / 0.35);
 }
 
-/* Pulsing animation for live indicators */
+/* Pulsing dot for "live" indicators — scale + opacity, smooth */
 @keyframes pulse-live {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.78); }
 }
 @utility animate-pulse-live {
-  animation: pulse-live 1.5s ease-in-out infinite;
+  animation: pulse-live 1.6s ease-in-out infinite;
 }
 
-/* Code editor textarea — monospace, dark */
+/* Soft horizontal sweep for "running" progress bars / live banners */
+@keyframes sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@utility animate-sweep {
+  animation: sweep 1.4s linear infinite;
+}
+
+/* Code editor textarea — monospace, sized to match the highlighter layer */
 @utility code-editor {
   font-family: var(--font-geist-mono), 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 13px;
@@ -190,80 +267,145 @@
   -moz-tab-size: 2;
 }
 
-/* Markdown render styles (for problem descriptions) */
+/* Terminal-style typography for log panes */
+@utility terminal-text {
+  font-family: var(--font-geist-mono), 'JetBrains Mono', 'Fira Code', monospace;
+  font-feature-settings: "calt" 0, "liga" 0;
+  font-variant-ligatures: none;
+}
+
+/* Markdown prose — readable line lengths, intentional hierarchy.
+   Body text uses muted-foreground (not foreground) to keep headings
+   visually prominent. */
 @utility prose-aether {
   & h1 {
-    font-size: 1.25rem;
-    font-weight: 700;
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: 1.3;
     margin-bottom: 0.75rem;
+    margin-top: 0.25rem;
     color: var(--foreground);
+    letter-spacing: -0.018em;
   }
   & h2 {
-    font-size: 1.125rem;
+    font-size: 1.0625rem;
     font-weight: 600;
+    line-height: 1.4;
     margin-bottom: 0.5rem;
+    margin-top: 1.5rem;
+    color: var(--foreground);
+    letter-spacing: -0.012em;
+  }
+  & h3 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 0.375rem;
     margin-top: 1rem;
     color: var(--foreground);
   }
-  & h3 {
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    margin-top: 0.75rem;
-    color: var(--foreground);
-  }
   & p {
-    margin-bottom: 0.75rem;
-    line-height: 1.625;
-    color: var(--muted-foreground);
+    margin-bottom: 0.875rem;
+    line-height: 1.7;
+    color: oklch(0.78 0.006 285);
+    font-size: 0.875rem;
+  }
+  & p:last-child {
+    margin-bottom: 0;
+  }
+  & ul, & ol {
+    margin-bottom: 0.875rem;
+    padding-left: 1.25rem;
+    line-height: 1.7;
+    color: oklch(0.78 0.006 285);
+    font-size: 0.875rem;
   }
   & ul {
     list-style: disc;
-    list-style-position: inside;
-    margin-bottom: 0.75rem;
-    color: var(--muted-foreground);
-  }
-  & ul li {
-    margin-top: 0.25rem;
   }
   & ol {
     list-style: decimal;
-    list-style-position: inside;
-    margin-bottom: 0.75rem;
-    color: var(--muted-foreground);
+  }
+  & ul li, & ol li {
+    margin-top: 0.3rem;
+    padding-left: 0.125rem;
+  }
+  & ul li::marker {
+    color: oklch(0.45 0.01 285);
+  }
+  & ol li::marker {
+    color: oklch(0.45 0.01 285);
   }
   & code {
-    background-color: var(--muted);
-    padding: 0.125rem 0.375rem;
+    background-color: oklch(0.20 0.006 285);
+    padding: 0.1rem 0.375rem;
     border-radius: 0.25rem;
     font-size: 0.8125rem;
     font-family: var(--font-geist-mono), monospace;
-    color: var(--primary);
+    color: oklch(0.85 0.04 295);
+    border: 1px solid oklch(0.26 0.006 285);
   }
   & pre {
-    background-color: var(--muted);
-    padding: 0.75rem;
-    border-radius: 0.375rem;
-    margin-bottom: 0.75rem;
+    background-color: oklch(0.15 0.004 285);
+    padding: 0.875rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.875rem;
     overflow-x: auto;
+    border: 1px solid oklch(0.24 0.006 285);
   }
   & pre code {
     background-color: transparent;
     padding: 0;
+    border: 0;
     color: var(--foreground);
+    font-size: 0.8125rem;
   }
   & strong {
     font-weight: 600;
     color: var(--foreground);
   }
+  & em {
+    font-style: italic;
+    color: oklch(0.85 0.006 60);
+  }
   & hr {
     border-color: var(--border);
-    margin: 1rem 0;
+    margin: 1.25rem 0;
   }
   & blockquote {
     border-left: 2px solid var(--primary);
-    padding-left: 0.75rem;
+    padding-left: 0.875rem;
+    margin: 0.875rem 0;
+    color: oklch(0.78 0.006 285);
     font-style: italic;
-    color: var(--muted-foreground);
+  }
+  & a {
+    color: var(--primary);
+    text-decoration: none;
+    border-bottom: 1px solid oklch(0.62 0.19 295 / 0.3);
+    transition: border-color 150ms ease;
+  }
+  & a:hover {
+    border-bottom-color: var(--primary);
+  }
+  /* Markdown tables (some problems use them) */
+  & table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0.875rem;
+    font-size: 0.8125rem;
+  }
+  & th, & td {
+    border: 1px solid var(--border);
+    padding: 0.375rem 0.625rem;
+    text-align: left;
+  }
+  & th {
+    background-color: oklch(0.18 0.004 285);
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  & td {
+    color: oklch(0.78 0.006 285);
   }
 }
