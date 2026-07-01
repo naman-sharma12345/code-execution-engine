@@ -1,38 +1,24 @@
-<![CDATA[<div align="center">
-
-# ⚡ AetherRun
-
-### Distributed Code Execution Engine
-
-*A production-grade, multi-language code execution platform inspired by LeetCode & Codeforces.*
-*Real-time execution streaming • Sandboxed isolation • Priority queues • Built from scratch.*
-
-<br/>
-
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js_16-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![Tailwind](https://img.shields.io/badge/Tailwind_CSS_4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-
-<br/>
-
-<table>
-<tr>
-<td align="center"><b>4 Languages</b><br/><sub>JS • Python • C++ • Java</sub></td>
-<td align="center"><b>Real-Time SSE</b><br/><sub>Live execution streaming</sub></td>
-<td align="center"><b>Priority Queue</b><br/><sub>BullMQ-compatible API</sub></td>
-<td align="center"><b>Sandboxed</b><br/><sub>Process-group isolation</sub></td>
-</tr>
-</table>
-
-</div>
-
-<br/>
+<p align="center">
+  <h1 align="center">⚡ AetherRun</h1>
+  <h3 align="center">Distributed Code Execution Engine</h3>
+  <p align="center">
+    A production-grade, multi-language code execution platform inspired by LeetCode & Codeforces.<br>
+    Real-time execution streaming • Sandboxed isolation • Priority queues • Built from scratch.
+  </p>
+  <p align="center">
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
+    <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js_16-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js"></a>
+    <a href="https://react.dev/"><img src="https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React"></a>
+    <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma"></a>
+    <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS_4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind"></a>
+  </p>
+</p>
 
 ---
 
-<br/>
+> **4 Languages** (JS • Python • C++ • Java) &nbsp;|&nbsp; **Real-Time SSE** (Live execution streaming) &nbsp;|&nbsp; **Priority Queue** (BullMQ-compatible) &nbsp;|&nbsp; **Sandboxed** (Process-group isolation)
+
+---
 
 ## 🎯 What is AetherRun?
 
@@ -46,7 +32,7 @@ This isn't a toy REPL. It's a **systems-level project** that demonstrates:
 - **Real-time systems** — SSE streaming with event buffering for late-arriving clients
 - **Production readiness** — rate limiting, container pooling, graceful error handling, database persistence
 
-<br/>
+---
 
 ## 🏗️ System Architecture
 
@@ -77,10 +63,10 @@ This isn't a toy REPL. It's a **systems-level project** that demonstrates:
 │                                                 │   Priority Queue     │     │
 │                                                 │   (BullMQ-compat)    │     │
 │                                                 │                      │     │
-│                                                 │   PREMIUM(10) > FREE(1)    │
-│                                                 │   FIFO within priority│    │
-│                                                 │   Exp. backoff retries│    │
-│                                                 │   Dead-letter queue  │     │
+│                                                 │  PREMIUM(10) > FREE(1)     │
+│                                                 │  FIFO within priority│     │
+│                                                 │  Exp. backoff retries│     │
+│                                                 │  Dead-letter queue   │     │
 │                                                 └──────────┬───────────┘     │
 │                                                            │                 │
 │                                          ┌─────────────────┼──────────┐      │
@@ -92,7 +78,7 @@ This isn't a toy REPL. It's a **systems-level project** that demonstrates:
 │                                          │               │          │        │
 │                                          ▼               ▼          ▼        │
 │                                     ┌────────────────────────────────────┐   │
-│                                     │   Language Runner (Abstract Factory)│  │
+│                                     │  Language Runner (Abstract Factory) │  │
 │                                     │   ┌──────┐ ┌──────┐ ┌────┐ ┌────┐ │   │
 │                                     │   │  JS  │ │  Py  │ │C++ │ │Java│ │   │
 │                                     │   └──────┘ └──────┘ └────┘ └────┘ │   │
@@ -111,7 +97,7 @@ This isn't a toy REPL. It's a **systems-level project** that demonstrates:
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-<br/>
+---
 
 ## ✨ Key Features
 
@@ -146,9 +132,9 @@ User code runs in strict isolation. Every resource is capped and enforced:
 | Resource | Enforcement | Why It Matters |
 |:---------|:------------|:---------------|
 | **Wall-clock time** | `setTimeout` + `process.kill(-pgid, SIGKILL)` kills the *entire process tree* | Prevents infinite loops from hogging workers |
-| **Memory** | Runtime flags (`--max-old-space-size` for Node, `-Xmx` for Java) + `/proc/<pid>/status` RSS sampling at **5ms intervals** | Catches memory bombs before OOM kills the host |
+| **Memory** | Runtime flags (`--max-old-space-size`, `-Xmx`) + `/proc/<pid>/status` RSS sampling at **5ms intervals** | Catches memory bombs before OOM kills the host |
 | **Processes** | `detached: true` → own process group → `kill(-pgid)` atomically kills all children | Prevents fork-bomb escapes |
-| **Network** | Stripped environment (no DB URLs, no API keys in env) + Docker `NetworkDisabled: true` in prod | Prevents data exfiltration |
+| **Network** | Stripped environment (no DB URLs, no API keys) + Docker `NetworkDisabled: true` in prod | Prevents data exfiltration |
 | **Stdout** | **1MB cap** per test case | Prevents infinite-output programs from causing OOM |
 
 ```typescript
@@ -179,6 +165,7 @@ A **production-grade priority queue** built from scratch with the exact same API
 ```
 
 **Features implemented:**
+
 - ⚡ **Priority scheduling** — `PREMIUM (10) > FREE (1)`, FIFO within same priority
 - 🔄 **Exponential backoff retries** — 1s → 2s → 4s → 8s → 16s (configurable)
 - 💀 **Dead-letter queue** — permanently failed jobs moved to DLQ for inspection
@@ -187,6 +174,7 @@ A **production-grade priority queue** built from scratch with the exact same API
 
 ```typescript
 // Swapping to real BullMQ is a 1-file change:
+
 // Before (in-memory):
 import { getQueue } from '@/queue/SubmissionQueue'
 const queue = getQueue()
@@ -254,14 +242,14 @@ The `ContainerPoolService` maintains **pre-warmed Docker containers per language
 
 ```
 Container Pool Stats:
-┌───────────┬───────┬──────┬────────┐
+┌────────────┬───────┬──────┬────────┐
 │ Language   │ Total │ Idle │ In-Use │
-├───────────┼───────┼──────┼────────┤
+├────────────┼───────┼──────┼────────┤
 │ JavaScript │   3   │  2   │   1    │
 │ Python     │   3   │  3   │   0    │
 │ C++        │   3   │  3   │   0    │
 │ Java       │   3   │  2   │   1    │
-└───────────┴───────┴──────┴────────┘
+└────────────┴───────┴──────┴────────┘
 ```
 
 ---
@@ -275,7 +263,7 @@ Redis-style sliding-window rate limiter — prevents abuse without blocking legi
 - Periodic cleanup prevents memory leaks
 - **Swap to Redis:** Replace with `ioredis` `ZADD`/`ZREMRANGEBYSCORE`/`ZCARD` — middleware code stays identical
 
-<br/>
+---
 
 ## 🗃️ Database Schema
 
@@ -296,11 +284,10 @@ createdAt         cpuTimeLimit       isHidden            code                 st
                                                          compileOutput
                                                          completedAt
 
-⊕ = unique index
-FK = foreign key with cascading delete on test cases & execution logs
+⊕ = unique index    FK = foreign key with cascading delete
 ```
 
-<br/>
+---
 
 ## 📂 Project Structure
 
@@ -309,53 +296,53 @@ aetherrun/
 ├── src/
 │   ├── app/
 │   │   ├── api/
-│   │   │   ├── problems/          # GET /api/problems, GET /api/problems/:id
-│   │   │   ├── submissions/       # POST /api/submissions, GET, SSE stream
-│   │   │   ├── users/             # GET /api/users, POST (login)
-│   │   │   ├── leaderboard/       # GET /api/leaderboard
-│   │   │   └── stats/             # GET /api/stats (engine telemetry)
-│   │   ├── page.tsx               # Main IDE layout (resizable panels)
-│   │   ├── layout.tsx             # Root layout with Geist fonts
-│   │   └── globals.css            # Custom theme (charcoal + violet)
+│   │   │   ├── problems/            # GET /api/problems, GET /api/problems/:id
+│   │   │   ├── submissions/         # POST /api/submissions, GET, SSE stream
+│   │   │   ├── users/               # GET /api/users, POST (login)
+│   │   │   ├── leaderboard/         # GET /api/leaderboard
+│   │   │   └── stats/               # GET /api/stats (engine telemetry)
+│   │   ├── page.tsx                 # Main IDE layout (resizable panels)
+│   │   ├── layout.tsx               # Root layout with Geist fonts
+│   │   └── globals.css              # Custom theme (charcoal + violet)
 │   │
 │   ├── components/
-│   │   ├── aether/                # App-specific components
-│   │   │   ├── code-editor.tsx    # Syntax-highlighted code editor
-│   │   │   ├── execution-panel.tsx # Real-time execution log viewer
-│   │   │   ├── problem-sidebar.tsx # Problem list, leaderboard, history
-│   │   │   ├── problem-viewer.tsx  # Tabbed problem viewer (desc/samples/notes)
-│   │   │   ├── header.tsx          # Top bar with live engine indicator
-│   │   │   ├── stats-bar.tsx       # Bottom stats bar (queue/workers/uptime)
-│   │   │   └── verdict-badge.tsx   # Animated verdict status badges
-│   │   └── ui/                     # shadcn/ui primitives (30+ components)
+│   │   ├── aether/                  # App-specific components
+│   │   │   ├── code-editor.tsx      # Syntax-highlighted code editor
+│   │   │   ├── execution-panel.tsx  # Real-time execution log viewer
+│   │   │   ├── problem-sidebar.tsx  # Problem list, leaderboard, history
+│   │   │   ├── problem-viewer.tsx   # Tabbed problem viewer (desc/samples/notes)
+│   │   │   ├── header.tsx           # Top bar with live engine indicator
+│   │   │   ├── stats-bar.tsx        # Bottom stats bar (queue/workers/uptime)
+│   │   │   └── verdict-badge.tsx    # Animated verdict status badges
+│   │   └── ui/                      # shadcn/ui primitives (30+ components)
 │   │
-│   ├── domain/                     # Single source of truth
-│   │   ├── enums.ts               # Language, Status, Tier (string unions)
-│   │   ├── types.ts               # DTOs: TestCaseData, JobPayload, etc.
-│   │   └── checker.ts             # Checker interface + ExactChecker + ToleranceChecker
+│   ├── domain/                      # Single source of truth
+│   │   ├── enums.ts                 # Language, Status, Tier (string unions)
+│   │   ├── types.ts                 # DTOs: TestCaseData, JobPayload, etc.
+│   │   └── checker.ts              # Checker interface + ExactChecker + ToleranceChecker
 │   │
-│   ├── languages/                  # Abstract Factory pattern.
-│   │   ├── LanguageRunner.ts      # Abstract base class (compile + run)
-│   │   ├── JavaScriptRunner.ts    # Node.js runner
-│   │   ├── PythonRunner.ts        # Python 3 runner
-│   │   ├── CppRunner.ts           # g++ C++17 runner
-│   │   ├── JavaRunner.ts          # OpenJDK 21 runner
-│   │   └── RunnerFactory.ts       # Factory + singleton registry
+│   ├── languages/                   # Abstract Factory pattern
+│   │   ├── LanguageRunner.ts        # Abstract base class (compile + run)
+│   │   ├── JavaScriptRunner.ts      # Node.js runner
+│   │   ├── PythonRunner.ts          # Python 3 runner
+│   │   ├── CppRunner.ts            # g++ C++17 runner
+│   │   ├── JavaRunner.ts            # OpenJDK 21 runner
+│   │   └── RunnerFactory.ts         # Factory + singleton registry
 │   │
 │   ├── queue/
-│   │   └── SubmissionQueue.ts     # BullMQ-compat priority queue with DLQ
+│   │   └── SubmissionQueue.ts       # BullMQ-compat priority queue with DLQ
 │   │
 │   ├── services/
-│   │   ├── SubmissionService.ts   # Validate → persist → enqueue orchestration
-│   │   ├── EventBridge.ts         # In-process event bus (SSE backbone)
-│   │   ├── ContainerPoolService.ts # Pre-warmed container pool per language
-│   │   ├── RateLimiter.ts         # Sliding-window rate limiter
-│   │   ├── TestCaseService.ts     # Test case CRUD
-│   │   ├── AuthService.ts         # User authentication & session
-│   │   └── EngineBootstrap.ts     # System initialization on startup
+│   │   ├── SubmissionService.ts     # Validate → persist → enqueue orchestration
+│   │   ├── EventBridge.ts           # In-process event bus (SSE backbone)
+│   │   ├── ContainerPoolService.ts  # Pre-warmed container pool per language
+│   │   ├── RateLimiter.ts           # Sliding-window rate limiter
+│   │   ├── TestCaseService.ts       # Test case CRUD
+│   │   ├── AuthService.ts           # User authentication & session
+│   │   └── EngineBootstrap.ts       # System initialization on startup
 │   │
 │   ├── workers/
-│   │   └── QueueWorker.ts         # Worker pool (poll → compile → run → emit)
+│   │   └── QueueWorker.ts           # Worker pool (poll → compile → run → emit)
 │   │
 │   ├── hooks/
 │   │   ├── use-submission-stream.ts # SSE hook for real-time events
@@ -363,24 +350,24 @@ aetherrun/
 │   │   └── use-toast.ts            # Toast notification hook
 │   │
 │   └── lib/
-│       ├── api.ts                  # Type-safe API client
-│       ├── db.ts                   # Prisma client singleton
-│       └── utils.ts                # cn() utility
+│       ├── api.ts                   # Type-safe API client
+│       ├── db.ts                    # Prisma client singleton
+│       └── utils.ts                 # cn() utility
 │
 ├── prisma/
-│   ├── schema.prisma               # 5-model relational schema
-│   └── seed.ts                     # Seed: 2 users, 4 problems, test cases
+│   ├── schema.prisma                # 5-model relational schema
+│   └── seed.ts                      # Seed: 2 users, 4 problems, test cases
 │
 ├── mini-services/
-│   └── execution-engine/           # Socket.io service (alternative to SSE)
+│   └── execution-engine/            # Socket.io service (alternative to SSE)
 │
 ├── docker/
-│   └── Dockerfile.base             # Secure base image for prod containers
+│   └── Dockerfile.base              # Secure base image for prod containers
 │
 └── package.json
 ```
 
-<br/>
+---
 
 ## 🎨 Design Patterns & Architecture Decisions
 
@@ -389,12 +376,12 @@ aetherrun/
 | **Abstract Factory** | `LanguageRunner` → `RunnerFactory` | New language = 1 class + 1 line. Worker stays unchanged. Open/Closed principle. |
 | **Strategy** | `Checker` interface → `ExactChecker`, `ToleranceChecker` | Problems declare their own comparator. Decouples comparison logic from test data. |
 | **Observer / Event Bus** | `EventBridge` (EventEmitter) | Workers emit events; SSE routes subscribe. Fully decoupled producer/consumer. |
-| **Singleton (Hot-Reload Safe)** | `globalThis.__aetherQueue`, `__aetherPool`, `__aetherWorkers` | Prevents duplicate instances during Next.js HMR in dev mode. |
+| **Singleton (HMR-safe)** | `globalThis.__aetherQueue`, `__aetherPool`, `__aetherWorkers` | Prevents duplicate instances during Next.js hot-reload in dev mode. |
 | **Service Layer** | `SubmissionService`, `TestCaseService`, `RateLimiter` | Business logic separated from API routes. Routes are thin controllers. |
 | **Dead-Letter Queue** | `SubmissionQueue.fail()` → DLQ after max retries | Failed jobs are preserved for inspection, not silently dropped. |
 | **Process-Group Isolation** | `spawn({ detached: true })` + `kill(-pgid, SIGKILL)` | Atomically kills entire process tree — prevents fork-bomb escapes. |
 
-<br/>
+---
 
 ## 🔌 API Reference
 
@@ -411,7 +398,7 @@ aetherrun/
 | `POST` | `/api/users` | Login (returns session token) |
 | `GET` | `/api/leaderboard` | Top users by accepted submissions |
 
-<br/>
+---
 
 ## 🚀 Getting Started
 
@@ -442,7 +429,7 @@ npx prisma db seed      # Seeds: 2 users, 4 problems, test cases
 npm run dev
 ```
 
-The app will be available at **[http://localhost:3000](http://localhost:3000)**.
+The app will be available at **http://localhost:3000**.
 
 ### Usage
 
@@ -464,9 +451,9 @@ The app will be available at **[http://localhost:3000](http://localhost:3000)**.
 
 > 💡 Switch users via the picker in the top-right to see **priority queuing** in action.
 
-<br/>
+---
 
-## ⚙️ Advanced: Production Deployment
+## ⚙️ Production Deployment
 
 ### Docker Container Security
 
@@ -504,7 +491,7 @@ npm install bullmq ioredis
 # 4. The rest of the codebase stays identical
 ```
 
-<br/>
+---
 
 ## 🛠️ Tech Stack
 
@@ -517,9 +504,8 @@ npm install bullmq ioredis
 | **Real-time** | Server-Sent Events + Socket.io (optional) | Native browser support, auto-reconnect |
 | **Execution** | `child_process.spawn` with process-group isolation | OS-level sandboxing without Docker overhead in dev |
 | **UI System** | 30+ shadcn/ui components + custom Aether components | Accessible, composable, themeable |
-| **Fonts** | Geist Sans + Geist Mono (Vercel) | Clean, modern, monospace for code |
 
-<br/>
+---
 
 ## 🎓 What This Project Demonstrates
 
@@ -532,15 +518,9 @@ This project was built to showcase **systems-level engineering skills** at a dep
 - **Database Design** — Relational schema with proper indexing, cascading deletes, and denormalized counters for query performance
 - **Production Architecture** — Container pooling, configurable concurrency, graceful error handling, structured logging
 
-<br/>
-
 ---
 
-<div align="center">
-
-**Built with ☕ and curiosity**
-
-*If you found this interesting, consider giving it a ⭐*
-
-</div>
-]]>
+<p align="center">
+  <b>Built with ☕ and curiosity</b><br>
+  <sub>If you found this interesting, consider giving it a ⭐</sub>
+</p>
