@@ -334,7 +334,7 @@ aetherrun/
 │   │   ├── types.ts               # DTOs: TestCaseData, JobPayload, etc.
 │   │   └── checker.ts             # Checker interface + ExactChecker + ToleranceChecker
 │   │
-│   ├── languages/                  # Abstract Factory pattern
+│   ├── languages/                  # Abstract Factory pattern.
 │   │   ├── LanguageRunner.ts      # Abstract base class (compile + run)
 │   │   ├── JavaScriptRunner.ts    # Node.js runner
 │   │   ├── PythonRunner.ts        # Python 3 runner
