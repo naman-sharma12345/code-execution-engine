@@ -1,0 +1,66 @@
+# =====================================================================
+# AetherRun — Base Dockerfile for execution environments
+# =====================================================================
+# This Dockerfile builds a SECURE base image used by the ContainerPool
+# service to spin up isolated execution containers.
+#
+# Security features:
+#   - Non-root user `runner` (UID 1000) — user code never runs as root.
+#   - No network tools installed (no curl, wget, nc) — defense in depth
+#     against outbound requests, complementing NetworkDisabled: true.
+#   - Read-only filesystem mount for /workspace/code (enforced at runtime
+#     via dockerode BindOptions { readOnly: true }).
+#   - Resource limits applied at container spawn time:
+#       * Memory:  --memory=256m
+#       * CPU:     --cpus=1.0
+#       * PIDs:    --pids-limit=50  (prevents fork bombs)
+#       * Time:    enforced by the worker via process.kill(-pgid, SIGKILL)
+#
+# Languages included:
+#   - Node.js 22 (JavaScript)
+#   - Python 3.12
+#   - GCC 14 (C/C++)
+#   - OpenJDK 21 (Java)
+# =====================================================================
+
+FROM ubuntu:24.04
+
+# Avoid interactive prompts during apt operations
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Install language runtimes + minimal system tools.
+# NOTE: We intentionally do NOT install curl, wget, netcat, or any network
+# utilities. Combined with NetworkDisabled: true at container spawn, this
+# provides defense-in-depth against malicious outbound requests.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    nodejs \
+    npm \
+    python3 \
+    python3-pip \
+    g++ \
+    gcc \
+    default-jdk-headless \
+    procps \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create a non-root user for code execution.
+# The worker mounts user code into /workspace/code as this user.
+RUN useradd -m -s /bin/bash -u 1000 runner
+
+# Create the workspace directory with correct permissions.
+# /workspace/code   — user source code (read-only mount at runtime)
+# /workspace/build  — compilation artifacts (read-write)
+# /workspace/run    — runtime files (read-write)
+RUN mkdir -p /workspace/code /workspace/build /workspace/run \
+    && chown -R runner:runner /workspace
+
+# Switch to the non-root user for all subsequent operations.
+USER runner
+WORKDIR /workspace
+
+# Default command — overridden by the worker at container spawn time.
+CMD ["sleep", "infinity"]

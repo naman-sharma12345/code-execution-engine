@@ -1,0 +1,107 @@
+// =====================================================================
+// AetherRun — Distributed Code Execution Engine
+// Prisma Schema (PostgreSQL-compatible models, running on SQLite locally)
+// =====================================================================
+// Design notes:
+//  - subscriptionTier drives QUEUE PRIORITY (PREMIUM > FREE) inside BullMQ.
+//    We persist it on the User so the API layer can attach a numeric
+//    priority to every enqueued job without an extra lookup at enqueue
+//    time (we still re-validate at dequeue time to prevent tampering).
+//  - Submission.status is a string-enum (works on both SQLite & Postgres)
+//    mirroring SubmissionStatus from the domain layer.
+//  - ExecutionLog stores per-test-case results so the UI can render a
+//    fine-grained heatmap of which test cases passed / failed.
+// =====================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String        @id @default(cuid())
+  username         String        @unique
+  email            String        @unique
+  subscriptionTier String        @default("FREE") // FREE | PREMIUM
+  createdAt        DateTime      @default(now())
+  submissions      Submission[]
+
+  @@index([subscriptionTier])
+}
+
+model Problem {
+  id           String     @id @default(cuid())
+  title        String
+  description  String
+  timeLimit    Int        @default(2000) // milliseconds (wall-clock)
+  cpuTimeLimit Int        @default(2000) // milliseconds (CPU time)
+  memoryLimit  Int        @default(256)  // megabytes
+  difficulty   String     @default("EASY") // EASY | MEDIUM | HARD
+  tags         String     @default("")     // comma-separated
+  createdAt    DateTime   @default(now())
+  testCases    TestCase[]
+  submissions  Submission[]
+
+  @@index([difficulty])
+}
+
+model TestCase {
+  id             String        @id @default(cuid())
+  problemId      String
+  problem        Problem       @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  input          String
+  expectedOutput String
+  isHidden       Boolean       @default(false)
+  order          Int           @default(0)
+  createdAt      DateTime      @default(now())
+  executionLogs  ExecutionLog[]
+
+  @@index([problemId])
+}
+
+model Submission {
+  id                String          @id @default(cuid())
+  problemId         String
+  problem           Problem         @relation(fields: [problemId], references: [id])
+  userId            String
+  user              User            @relation(fields: [userId], references: [id])
+  language          String          // cpp | python | java | javascript
+  code              String
+  status            String          @default("PENDING")
+  // PENDING | COMPILING | RUNNING | ACCEPTED | WRONG_ANSWER | TLE | MLE | RTE | FAILED
+  executionTime     Int             @default(0) // milliseconds (max across all test cases)
+  memoryUsed        Int             @default(0) // kilobytes (max across all test cases)
+  testCasesPassed   Int             @default(0)
+  totalTestCases    Int             @default(0)
+  errorMessage      String?
+  compileOutput     String?
+  createdAt         DateTime        @default(now())
+  completedAt       DateTime?
+  executionLogs     ExecutionLog[]
+
+  @@index([problemId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ExecutionLog {
+  id            String      @id @default(cuid())
+  submissionId  String
+  submission    Submission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  testCaseId    String
+  testCase      TestCase    @relation(fields: [testCaseId], references: [id])
+  status        String      // ACCEPTED | WRONG_ANSWER | TLE | MLE | RTE | SKIPPED
+  stdout        String      @default("")
+  stderr        String      @default("")
+  exitCode      Int         @default(0)
+  executionTime Int         @default(0) // ms
+  memoryUsed    Int         @default(0) // KB
+  createdAt     DateTime    @default(now())
+
+  @@index([submissionId])
+}

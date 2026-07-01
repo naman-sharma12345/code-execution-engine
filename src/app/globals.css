@@ -1,0 +1,269 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* AetherRun dark theme — competitive-programming aesthetic.
+   Deep slate background, emerald accents for ACCEPTED, and a subtle
+   blue tint for interactive elements. Inspired by LeetCode's dark mode. */
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.16 0.015 250);       /* deep slate */
+  --foreground: oklch(0.95 0.005 250);       /* near-white */
+  --card: oklch(0.20 0.015 250);             /* surface */
+  --card-foreground: oklch(0.95 0.005 250);
+  --popover: oklch(0.22 0.015 250);
+  --popover-foreground: oklch(0.95 0.005 250);
+  --primary: oklch(0.70 0.18 152);           /* emerald accent */
+  --primary-foreground: oklch(0.12 0.015 250);
+  --secondary: oklch(0.26 0.015 250);
+  --secondary-foreground: oklch(0.95 0.005 250);
+  --muted: oklch(0.24 0.015 250);
+  --muted-foreground: oklch(0.65 0.01 250);
+  --accent: oklch(0.30 0.02 250);
+  --accent-foreground: oklch(0.95 0.005 250);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(0.28 0.015 250);
+  --input: oklch(0.24 0.015 250);
+  --ring: oklch(0.55 0.13 200);
+  /* Chart palette — distinguishable verdict colors */
+  --chart-1: oklch(0.70 0.18 152);  /* emerald - ACCEPTED */
+  --chart-2: oklch(0.65 0.22 25);   /* red - WRONG/FAILED */
+  --chart-3: oklch(0.72 0.16 70);   /* orange - TLE */
+  --chart-4: oklch(0.62 0.20 300);  /* purple - MLE */
+  --chart-5: oklch(0.65 0.20 350);  /* pink - RTE */
+  --sidebar: oklch(0.18 0.015 250);
+  --sidebar-foreground: oklch(0.95 0.005 250);
+  --sidebar-primary: oklch(0.70 0.18 152);
+  --sidebar-primary-foreground: oklch(0.12 0.015 250);
+  --sidebar-accent: oklch(0.26 0.015 250);
+  --sidebar-accent-foreground: oklch(0.95 0.005 250);
+  --sidebar-border: oklch(0.28 0.015 250);
+  --sidebar-ring: oklch(0.55 0.13 200);
+}
+
+.dark {
+  /* Same as :root — we default to dark mode. */
+  --background: oklch(0.16 0.015 250);
+  --foreground: oklch(0.95 0.005 250);
+  --card: oklch(0.20 0.015 250);
+  --card-foreground: oklch(0.95 0.005 250);
+  --popover: oklch(0.22 0.015 250);
+  --popover-foreground: oklch(0.95 0.005 250);
+  --primary: oklch(0.70 0.18 152);
+  --primary-foreground: oklch(0.12 0.015 250);
+  --secondary: oklch(0.26 0.015 250);
+  --secondary-foreground: oklch(0.95 0.005 250);
+  --muted: oklch(0.24 0.015 250);
+  --muted-foreground: oklch(0.65 0.01 250);
+  --accent: oklch(0.30 0.02 250);
+  --accent-foreground: oklch(0.95 0.005 250);
+  --destructive: oklch(0.65 0.22 25);
+  --border: oklch(0.28 0.015 250);
+  --input: oklch(0.24 0.015 250);
+  --ring: oklch(0.55 0.13 200);
+  --chart-1: oklch(0.70 0.18 152);
+  --chart-2: oklch(0.65 0.22 25);
+  --chart-3: oklch(0.72 0.16 70);
+  --chart-4: oklch(0.62 0.20 300);
+  --chart-5: oklch(0.65 0.20 350);
+  --sidebar: oklch(0.18 0.015 250);
+  --sidebar-foreground: oklch(0.95 0.005 250);
+  --sidebar-primary: oklch(0.70 0.18 152);
+  --sidebar-primary-foreground: oklch(0.12 0.015 250);
+  --sidebar-accent: oklch(0.26 0.015 250);
+  --sidebar-accent-foreground: oklch(0.95 0.005 250);
+  --sidebar-border: oklch(0.28 0.015 250);
+  --sidebar-ring: oklch(0.55 0.13 200);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+    font-variation-settings: "opsz" 32;
+  }
+}
+
+/* ─── AetherRun custom utilities (Tailwind 4 `@utility` directive) ──── */
+
+/* Custom scrollbar — thin, themed, blends with the dark UI */
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.35 0.015 250) transparent;
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: oklch(0.35 0.015 250);
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: oklch(0.45 0.015 250);
+  }
+}
+
+/* Subtle grid background — gives the "execution engine" feel */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, oklch(0.25 0.015 250 / 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0.25 0.015 250 / 0.4) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Glow effects for active status badges */
+@utility glow-emerald {
+  box-shadow: 0 0 12px oklch(0.70 0.18 152 / 0.5);
+}
+@utility glow-red {
+  box-shadow: 0 0 12px oklch(0.65 0.22 25 / 0.5);
+}
+@utility glow-amber {
+  box-shadow: 0 0 12px oklch(0.72 0.16 70 / 0.5);
+}
+@utility glow-blue {
+  box-shadow: 0 0 12px oklch(0.55 0.13 200 / 0.5);
+}
+
+/* Pulsing animation for live indicators */
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@utility animate-pulse-live {
+  animation: pulse-live 1.5s ease-in-out infinite;
+}
+
+/* Code editor textarea — monospace, dark */
+@utility code-editor {
+  font-family: var(--font-geist-mono), 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  tab-size: 2;
+  -moz-tab-size: 2;
+}
+
+/* Markdown render styles (for problem descriptions) */
+@utility prose-aether {
+  & h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--foreground);
+  }
+  & h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    margin-top: 1rem;
+    color: var(--foreground);
+  }
+  & h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    margin-top: 0.75rem;
+    color: var(--foreground);
+  }
+  & p {
+    margin-bottom: 0.75rem;
+    line-height: 1.625;
+    color: var(--muted-foreground);
+  }
+  & ul {
+    list-style: disc;
+    list-style-position: inside;
+    margin-bottom: 0.75rem;
+    color: var(--muted-foreground);
+  }
+  & ul li {
+    margin-top: 0.25rem;
+  }
+  & ol {
+    list-style: decimal;
+    list-style-position: inside;
+    margin-bottom: 0.75rem;
+    color: var(--muted-foreground);
+  }
+  & code {
+    background-color: var(--muted);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.8125rem;
+    font-family: var(--font-geist-mono), monospace;
+    color: var(--primary);
+  }
+  & pre {
+    background-color: var(--muted);
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    margin-bottom: 0.75rem;
+    overflow-x: auto;
+  }
+  & pre code {
+    background-color: transparent;
+    padding: 0;
+    color: var(--foreground);
+  }
+  & strong {
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  & hr {
+    border-color: var(--border);
+    margin: 1rem 0;
+  }
+  & blockquote {
+    border-left: 2px solid var(--primary);
+    padding-left: 0.75rem;
+    font-style: italic;
+    color: var(--muted-foreground);
+  }
+}
