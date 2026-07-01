@@ -428,8 +428,8 @@ aetherrun/
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/aetherrun.git
-cd aetherrun
+git clone https://github.com/naman-sharma12345/code-execution-engine.git
+cd code-execution-engine
 
 # 2. Install dependencies
 npm install
