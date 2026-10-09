@@ -260,6 +260,32 @@ TEST(engine_evicts_oldest_finished_submissions_but_never_unfinished) {
   CHECK(e.submission_json(ids[11], j));   // newest kept
   CHECK(e.list_submissions(100).size() <= 5u);
 }
+TEST(seeded_problems_accept_reference_solutions_and_reject_wrong_ones) {
+  EngineConfig c; c.workers = 2; c.rate_limit = 1000;
+  Engine e(c);
+  std::ifstream f(std::string(AETHER_DATA_DIR) + "/problems.json");
+  std::stringstream ss; ss << f.rdbuf();
+  e.load_problems_json(ss.str());
+  e.add_user({"u", "u", "", Tier::Free});
+  e.start();
+  struct Ref { const char* pid; const char* good; const char* bad; };
+  const Ref refs[] = {
+    {"prob_sum", "a,b=map(int,input().split())\nprint(a+b)", "print(0)"},
+    {"prob_fizzbuzz",
+     "n=int(input())\nfor i in range(1,n+1):\n    print('FizzBuzz' if i%15==0 else 'Fizz' if i%3==0 else 'Buzz' if i%5==0 else i)",
+     "n=int(input())\nfor i in range(1,n+1):\n    print(i)"},
+    {"prob_factorial", "import math\nprint(math.factorial(int(input())))", "print(1)"},
+    {"prob_palindrome", "s=input().strip()\nprint('YES' if s==s[::-1] else 'NO')", "print('YES')"},
+  };
+  for (auto& r : refs) {
+    auto good = e.submit({r.pid, "u", "python", r.good}).id;
+    auto bad = e.submit({r.pid, "u", "python", r.bad}).id;
+    CHECK(e.wait_done(good, 30000)); CHECK(e.wait_done(bad, 30000));
+    Json jg, jb; e.submission_json(good, jg); e.submission_json(bad, jb);
+    CHECK_EQ(jg.str_or("status"), std::string("ACCEPTED"));
+    CHECK_EQ(jb.str_or("status"), std::string("WRONG_ANSWER"));
+  }
+}
 TEST(engine_loads_problem_file_and_rejects_bad_json) {
   Engine e;
   std::ifstream f(std::string(AETHER_DATA_DIR) + "/problems.json");
