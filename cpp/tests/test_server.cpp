@@ -131,6 +131,14 @@ TEST(http_sse_stream_delivers_ordered_events_and_done) {
   CHECK(late.body.find("\"type\":\"testcase\"") != std::string::npos);
   CHECK_EQ(http(f.server.port(), "GET", "/api/submissions/zzz/stream").status, 404);
 }
+TEST(http_api_root_matches_nextjs_route) {
+  Fixture f;
+  int p = f.server.port();
+  auto r = http(p, "GET", "/api");
+  CHECK_EQ(r.status, 200);
+  CHECK_EQ(Json::parse(r.body).str_or("message"), std::string("Hello, world!"));
+  CHECK_EQ(http(p, "POST", "/api").status, 405);
+}
 TEST(http_validation_errors) {
   Fixture f;
   int p = f.server.port();
