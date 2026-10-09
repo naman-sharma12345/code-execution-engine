@@ -274,6 +274,11 @@ void Server::handle(int fd) {
     send_resp(json_resp(200, j)); return;
   }
   if (seg[0] != "api") { send_resp(error_resp(404, "Not found")); return; }
+  if (seg.size() == 1) {  // mirrors src/app/api/route.ts
+    if (!is_get) return method_not_allowed();
+    Json j = Json::object(); j["message"] = "Hello, world!";
+    send_resp(json_resp(200, j)); return;
+  }
 
   if (seg.size() == 2 && seg[1] == "problems") {
     if (!is_get) return method_not_allowed();
