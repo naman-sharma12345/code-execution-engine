@@ -6,7 +6,10 @@ const cppBackend = process.env.AETHER_CPP_BACKEND?.replace(/\/$/, "");
 
 const nextConfig: NextConfig = {
   async rewrites() {
-    return cppBackend ? [{ source: "/api/:path*", destination: `${cppBackend}/api/:path*` }] : [];
+    // beforeFiles: the built-in /api route handlers must not shadow the C++ backend.
+    return cppBackend
+      ? { beforeFiles: [{ source: "/api/:path*", destination: `${cppBackend}/api/:path*` }], afterFiles: [], fallback: [] }
+      : [];
   },
   output: "standalone",
   /* config options here */
