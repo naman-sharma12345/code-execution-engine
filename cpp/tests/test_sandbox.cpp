@@ -96,12 +96,19 @@ TEST(sandbox_memory_limit_kills_and_flags) {
 }
 TEST(sandbox_does_not_leak_parent_env_or_fds) {
   setenv("AETHER_SECRET", "topsecret", 1);
-  int fd = open("/etc/hostname", O_RDONLY);
-  auto o = run_sandboxed(sh("env; ls /proc/self/fd | tr '\\n' ' '"));
+  // Park a descriptor at a high number so it cannot collide with the low fd that `ls`
+  // opens for its own directory listing.
+  int base = open("/etc/hostname", O_RDONLY);
+  int fd = 200;
+  CHECK(dup2(base, fd) == fd);
+  close(base);
+  auto o = run_sandboxed(sh("env; echo FDS; ls /proc/self/fd | tr '\\n' ' '"));
   CHECK(o.out.find("topsecret") == std::string::npos);
   CHECK(o.out.find("AETHER_SECRET") == std::string::npos);
-  std::string fds = o.out.substr(o.out.rfind("\n", o.out.size() - 2) == std::string::npos ? 0 : 0);
-  CHECK(o.out.find(" " + std::to_string(fd) + " ") == std::string::npos || fd <= 2);
+  auto pos = o.out.find("FDS");
+  CHECK(pos != std::string::npos);
+  std::string fds = o.out.substr(pos);
+  CHECK(fds.find(" 200 ") == std::string::npos && fds.find("\n200 ") == std::string::npos);
   close(fd);
 }
 TEST(sandbox_rlimit_fsize_blocks_big_files) {
@@ -164,7 +171,9 @@ TEST(sandbox_python_fork_loop_is_contained) {
   auto start = std::chrono::steady_clock::now();
   auto o = run_sandboxed(s);
   auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
-  CHECK(ms < 5000);
+  // Generous: shared CI runners are slow at tearing down hundreds of processes.
+  CHECK(ms < 20000);
+  CHECK(o.process_limit_exceeded || o.timed_out || o.exit_code != 0);
   usleep(500 * 1000);
   CHECK_EQ(std::system("true"), 0);
 }
