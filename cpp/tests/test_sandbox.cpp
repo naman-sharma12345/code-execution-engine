@@ -156,3 +156,15 @@ TEST(sandbox_closed_stdout_and_stdin_ok) {
   auto o = run_sandboxed(sh("exec >&-; exec <&-; exit 3"));
   CHECK_EQ(o.exit_code, 3);
 }
+TEST(sandbox_python_fork_loop_is_contained) {
+  RunSpec s;
+  s.argv = {"python3", "-c", "import os\nwhile True: os.fork()"};
+  s.env = {"PATH=/usr/bin:/bin"};
+  s.limits.wall_ms = 3000;
+  auto start = std::chrono::steady_clock::now();
+  auto o = run_sandboxed(s);
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
+  CHECK(ms < 5000);
+  usleep(500 * 1000);
+  CHECK_EQ(std::system("true"), 0);
+}
