@@ -1,5 +1,5 @@
 // aetherrun: C++17 code execution engine. Configuration via environment:
-//   AETHER_PORT (3001)  AETHER_HOST (127.0.0.1)  AETHER_WORKERS (2)  AETHER_RATE_LIMIT (5 per window)  AETHER_PROBLEMS (data/problems.json)
+//   AETHER_PORT (3001)  AETHER_HOST (127.0.0.1)  AETHER_WORKERS (2)  AETHER_RATE_LIMIT (5 per window)  AETHER_MAX_SUBMISSIONS (5000)  AETHER_PROBLEMS (data/problems.json)
 #include <signal.h>
 
 #include <cstdlib>
@@ -28,6 +28,7 @@ int main() {
   EngineConfig ec;
   ec.workers = static_cast<int>(env_int("AETHER_WORKERS", 2, 1, 64));
   ec.rate_limit = static_cast<int>(env_int("AETHER_RATE_LIMIT", 5, 1, 1000000));
+  ec.max_submissions_kept = static_cast<size_t>(env_int("AETHER_MAX_SUBMISSIONS", 5000, 1, 100000000));
   Engine engine(ec);
   const char* pf = std::getenv("AETHER_PROBLEMS");
   std::string path = pf ? pf : "data/problems.json";
