@@ -242,6 +242,24 @@ TEST(engine_premium_priority_runs_first) {
   CHECK(jp.int_or("completedAt") <= jf.int_or("completedAt"));
   CHECK(jp.int_or("completedAt") <= [&] { Json t; e.submission_json(ids[2], t); return t.int_or("completedAt"); }());
 }
+TEST(engine_evicts_oldest_finished_submissions_but_never_unfinished) {
+  EngineConfig c; c.workers = 2; c.rate_limit = 1000; c.max_submissions_kept = 5;
+  Engine e(c);
+  Problem p; p.id = "sum"; p.time_limit_ms = 3000;
+  p.tests = {{"s0", "3 5\n", "8\n", false, 0}};
+  e.add_problem(p);
+  e.add_user({"u", "u", "", Tier::Free});
+  e.start();
+  std::vector<std::string> ids;
+  for (int i = 0; i < 12; i++) {
+    ids.push_back(e.submit({"sum", "u", "python", PY}).id);
+    CHECK(e.wait_done(ids.back(), 20000));
+  }
+  Json j;
+  CHECK(!e.submission_json(ids[0], j));   // oldest evicted
+  CHECK(e.submission_json(ids[11], j));   // newest kept
+  CHECK(e.list_submissions(100).size() <= 5u);
+}
 TEST(engine_loads_problem_file_and_rejects_bad_json) {
   Engine e;
   std::ifstream f(std::string(AETHER_DATA_DIR) + "/problems.json");
