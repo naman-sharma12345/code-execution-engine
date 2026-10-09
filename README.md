@@ -20,6 +20,19 @@
 
 ---
 
+## ⚡ C++ engine (cpp/)
+
+A dependency-free C++17 rewrite of the execution backend lives in [`cpp/`](cpp/). It serves the same `/api/*` contract, so the existing UI runs on it unchanged:
+
+```bash
+cmake -S cpp -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j2
+./build/aether_tests                     # 66 tests
+AETHER_PORT=3001 AETHER_PROBLEMS=cpp/data/problems.json ./build/aetherrun
+AETHER_CPP_BACKEND=http://127.0.0.1:3001 npm run dev   # UI proxies /api/* to C++
+```
+
+It fixes several bugs in the TypeScript engine (trailing-newline checker bug, live memory limit, fork-bomb and `setsid()` escape handling, hidden-test leakage). CI runs the suite plain, under ASAN/UBSAN, under TSAN, and against a built Docker image. See [`cpp/COMPARISON.md`](cpp/COMPARISON.md) for the full list.
+
 ## 🎯 What is AetherRun?
 
 AetherRun is a **full-stack distributed code execution engine** — the kind of system that powers platforms like LeetCode, HackerRank, and Codeforces. It accepts user code in 4 languages, compiles it (if needed), runs it against test cases inside sandboxed environments, and streams the results back to the browser **in real-time** via Server-Sent Events.
