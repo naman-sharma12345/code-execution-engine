@@ -20,6 +20,9 @@ Run the server, then start Next.js with `AETHER_CPP_BACKEND=http://127.0.0.1:300
 ## Sandbox
 fork/exec per run with rlimits (CPU, file size, processes), its own process group, wall-clock kill, live memory monitoring, and an output cap. This is not a container: run it inside Docker or a VM for untrusted code.
 
+## Sandbox escape hardening
+Runs are tagged with a unique environment marker. After every run, any leftover process carrying the marker is killed, including ones that called `setsid()` to leave the process group.
+
 ## Fixes over the TypeScript version
 - Exact checker no longer rejects output missing a trailing newline.
 - Memory limit is enforced live, not after the fact.
