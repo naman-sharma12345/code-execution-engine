@@ -1,16 +1,16 @@
 name: cpp
 on:
   push:
-    paths: ["cpp/**"]
+    paths: ["cpp/**", ".github/workflows/cpp.yml"]
   pull_request:
-    paths: ["cpp/**"]
+    paths: ["cpp/**", ".github/workflows/cpp.yml"]
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        san: ["", "-fsanitize=address,undefined"]
+        san: ["", "-fsanitize=address,undefined", "-fsanitize=thread -O1 -g"]
     steps:
       - uses: actions/checkout@v4
       - name: Build
