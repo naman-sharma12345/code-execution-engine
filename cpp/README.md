@@ -7,7 +7,7 @@ A dependency-free C++17 rewrite of the AetherRun execution backend. It serves th
     ./build/aether_tests          # 59 tests
     AETHER_PORT=3001 AETHER_PROBLEMS=data/problems.json ./build/aetherrun
 
-Env: `AETHER_PORT`, `AETHER_HOST`, `AETHER_WORKERS`, `AETHER_RATE_LIMIT`, `AETHER_PROBLEMS`.
+Env: `AETHER_PORT`, `AETHER_HOST`, `AETHER_WORKERS`, `AETHER_RATE_LIMIT`, `AETHER_MAX_SUBMISSIONS` (finished submissions kept in memory, default 5000), `AETHER_PROBLEMS`.
 
 Benchmark (2-core sandbox VM, 4 workers, Python submissions, 16 concurrent clients): 80/80 ACCEPTED, about 27 judged submissions per second end to end.
 
