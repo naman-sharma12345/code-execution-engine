@@ -1,0 +1,21 @@
+name: cpp
+on:
+  push:
+    paths: ["cpp/**"]
+  pull_request:
+    paths: ["cpp/**"]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        san: ["", "-fsanitize=address,undefined"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cmake -S cpp -B build -DCMAKE_CXX_FLAGS="${{ matrix.san }}" && cmake --build build -j2
+      - name: Test
+        run: |
+          if [ -z "${{ matrix.san }}" ]; then ./build/aether_tests; else
+            for f in json checker rate_limiter queue engine; do ./build/aether_tests $f; done
+          fi
