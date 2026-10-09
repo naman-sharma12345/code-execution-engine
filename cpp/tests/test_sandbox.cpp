@@ -133,3 +133,26 @@ TEST(sandbox_fork_bomb_is_contained) {
   int n = -1; if (p) { if (fscanf(p, "%d", &n) != 1) n = -1; pclose(p); }
   CHECK(n <= 0);
 }
+TEST(sandbox_setsid_escapee_does_not_hang_and_is_reaped) {
+  auto start = std::chrono::steady_clock::now();
+  auto o = run_sandboxed(sh("setsid sleep 7.31 >/dev/null 2>&1 & echo ok; sleep 0.2", 3000));
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
+  CHECK_EQ(o.out, std::string("ok\n"));
+  CHECK(ms < 2000);
+  // the escapee must not survive the run
+  usleep(300 * 1000);
+  int alive = std::system("pgrep -f '[s]leep 7.31' >/dev/null 2>&1");
+  CHECK(alive != 0);
+  std::system("pkill -f '[s]leep 7.31' >/dev/null 2>&1");
+}
+TEST(sandbox_stderr_flood_is_capped) {
+  auto s = sh("yes >&2");
+  s.limits.output_limit = 2000;
+  auto o = run_sandboxed(s);
+  CHECK(o.output_exceeded);
+  CHECK(o.err.size() <= 2000);
+}
+TEST(sandbox_closed_stdout_and_stdin_ok) {
+  auto o = run_sandboxed(sh("exec >&-; exec <&-; exit 3"));
+  CHECK_EQ(o.exit_code, 3);
+}
