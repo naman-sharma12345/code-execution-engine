@@ -1,0 +1,171 @@
+{
+ "problems": [
+  {
+   "id": "prob_sum",
+   "title": "A + B Problem",
+   "description": "# A + B Problem\n\nRead two integers `a` and `b` from standard input and print their sum.\n\n## Input\nTwo space-separated integers `a` and `b` on a single line.\n\n## Output\nA single integer — the sum `a + b`.\n\n## Constraints\n- `-10^9 ≤ a, b ≤ 10^9`\n\n## Example\n**Input:** `3 5`\n**Output:** `8`",
+   "timeLimit": 2000,
+   "cpuTimeLimit": 2000,
+   "memoryLimit": 256,
+   "difficulty": "EASY",
+   "tags": "io,math,warmup",
+   "testCases": [
+    {
+     "problemId": "prob_sum",
+     "input": "3 5\n",
+     "expectedOutput": "8\n",
+     "isHidden": false,
+     "order": 0
+    },
+    {
+     "problemId": "prob_sum",
+     "input": "-10 20\n",
+     "expectedOutput": "10\n",
+     "isHidden": false,
+     "order": 1
+    },
+    {
+     "problemId": "prob_sum",
+     "input": "0 0\n",
+     "expectedOutput": "0\n",
+     "isHidden": true,
+     "order": 2
+    },
+    {
+     "problemId": "prob_sum",
+     "input": "1000000000 1000000000\n",
+     "expectedOutput": "2000000000\n",
+     "isHidden": true,
+     "order": 3
+    },
+    {
+     "problemId": "prob_sum",
+     "input": "-1000000000 -1000000000\n",
+     "expectedOutput": "-2000000000\n",
+     "isHidden": true,
+     "order": 4
+    }
+   ]
+  },
+  {
+   "id": "prob_fizzbuzz",
+   "title": "FizzBuzz",
+   "description": "# FizzBuzz\n\nPrint the numbers from 1 to `n` (inclusive), one per line. But:\n- For multiples of 3, print `Fizz` instead of the number.\n- For multiples of 5, print `Buzz` instead of the number.\n- For multiples of both 3 and 5, print `FizzBuzz`.\n\n## Input\nA single integer `n` (`1 ≤ n ≤ 100`).\n\n## Example\n**Input:** `15`\n**Output:**\n```\n1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n```",
+   "timeLimit": 2000,
+   "cpuTimeLimit": 2000,
+   "memoryLimit": 256,
+   "difficulty": "EASY",
+   "tags": "io,math,conditional",
+   "testCases": [
+    {
+     "problemId": "prob_fizzbuzz",
+     "input": "15\n",
+     "expectedOutput": "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n",
+     "isHidden": false,
+     "order": 0
+    },
+    {
+     "problemId": "prob_fizzbuzz",
+     "input": "5\n",
+     "expectedOutput": "1\n2\nFizz\n4\nBuzz\n",
+     "isHidden": false,
+     "order": 1
+    },
+    {
+     "problemId": "prob_fizzbuzz",
+     "input": "3\n",
+     "expectedOutput": "1\n2\nFizz\n",
+     "isHidden": true,
+     "order": 2
+    }
+   ]
+  },
+  {
+   "id": "prob_factorial",
+   "title": "Factorial",
+   "description": "# Factorial\n\nCompute `n!` (n factorial). Read `n` from stdin and print the result.\n\n## Constraints\n- `0 ≤ n ≤ 20` (result fits in a 64-bit integer)\n\n## Example\n**Input:** `5`\n**Output:** `120`",
+   "timeLimit": 1000,
+   "cpuTimeLimit": 1000,
+   "memoryLimit": 128,
+   "difficulty": "MEDIUM",
+   "tags": "math,recursion,bigint",
+   "testCases": [
+    {
+     "problemId": "prob_factorial",
+     "input": "5\n",
+     "expectedOutput": "120\n",
+     "isHidden": false,
+     "order": 0
+    },
+    {
+     "problemId": "prob_factorial",
+     "input": "0\n",
+     "expectedOutput": "1\n",
+     "isHidden": false,
+     "order": 1
+    },
+    {
+     "problemId": "prob_factorial",
+     "input": "10\n",
+     "expectedOutput": "3628800\n",
+     "isHidden": true,
+     "order": 2
+    },
+    {
+     "problemId": "prob_factorial",
+     "input": "20\n",
+     "expectedOutput": "2432902008176640000\n",
+     "isHidden": true,
+     "order": 3
+    }
+   ]
+  },
+  {
+   "id": "prob_palindrome",
+   "title": "Palindrome String",
+   "description": "# Palindrome String\n\nRead a string `s` (length `1 ≤ |s| ≤ 1000`, lowercase ASCII letters only)\nand print `YES` if it is a palindrome, otherwise `NO`.\n\n## Example\n**Input:** `racecar`\n**Output:** `YES`\n\n**Input:** `hello`\n**Output:** `NO`",
+   "timeLimit": 1000,
+   "cpuTimeLimit": 1000,
+   "memoryLimit": 128,
+   "difficulty": "EASY",
+   "tags": "string,two-pointer",
+   "testCases": [
+    {
+     "problemId": "prob_palindrome",
+     "input": "racecar\n",
+     "expectedOutput": "YES\n",
+     "isHidden": false,
+     "order": 0
+    },
+    {
+     "problemId": "prob_palindrome",
+     "input": "hello\n",
+     "expectedOutput": "NO\n",
+     "isHidden": false,
+     "order": 1
+    },
+    {
+     "problemId": "prob_palindrome",
+     "input": "a\n",
+     "expectedOutput": "YES\n",
+     "isHidden": true,
+     "order": 2
+    },
+    {
+     "problemId": "prob_palindrome",
+     "input": "abba\n",
+     "expectedOutput": "YES\n",
+     "isHidden": true,
+     "order": 3
+    },
+    {
+     "problemId": "prob_palindrome",
+     "input": "abcabc\n",
+     "expectedOutput": "NO\n",
+     "isHidden": true,
+     "order": 4
+    }
+   ]
+  }
+ ]
+}
