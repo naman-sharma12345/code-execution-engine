@@ -12,6 +12,8 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <atomic>
+#include <iterator>
 #include <chrono>
 #include <cstdio>
 #include <cstring>
@@ -80,7 +82,7 @@ TreeStat scan_group(pid_t pgid) {
   return t;
 }
 
-void child_setup_and_exec(const RunSpec& spec, int in_fd, int out_fd, int err_fd, int errpipe) {
+void child_setup_and_exec(const RunSpec& spec, const std::string& marker, int in_fd, int out_fd, int err_fd, int errpipe) {
   setsid();  // own session + process group: lets the parent kill the whole tree
   dup2(in_fd, 0);
   dup2(out_fd, 1);
@@ -120,6 +122,7 @@ void child_setup_and_exec(const RunSpec& spec, int in_fd, int out_fd, int err_fd
   argv.push_back(nullptr);
   std::vector<char*> envp;
   for (auto& e : spec.env) envp.push_back(const_cast<char*>(e.c_str()));
+  envp.push_back(const_cast<char*>(marker.c_str()));
   envp.push_back(nullptr);
 
   // execvpe honours PATH from the *current* environ, so set it from the child env first.
@@ -134,6 +137,30 @@ void child_setup_and_exec(const RunSpec& spec, int in_fd, int out_fd, int err_fd
 
 }  // namespace
 
+// Kill every process whose environment carries `marker` (catches setsid() escapees,
+// which a process-group kill misses). Own-uid /proc/<pid>/environ is readable.
+static void kill_marked(const std::string& marker) {
+  DIR* d = opendir("/proc");
+  if (!d) return;
+  pid_t self = getpid();
+  while (dirent* e = readdir(d)) {
+    if (e->d_name[0] < '1' || e->d_name[0] > '9') continue;
+    pid_t p = static_cast<pid_t>(atoi(e->d_name));
+    if (p == self) continue;
+    std::ifstream f("/proc/" + std::string(e->d_name) + "/environ", std::ios::binary);
+    if (!f) continue;
+    std::string env((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    size_t pos = 0;
+    while (pos < env.size()) {
+      size_t nul = env.find('\0', pos);
+      if (nul == std::string::npos) nul = env.size();
+      if (env.compare(pos, nul - pos, marker) == 0) { kill(p, SIGKILL); break; }
+      pos = nul + 1;
+    }
+  }
+  closedir(d);
+}
+
 void kill_group(int pgid) {
   if (pgid > 1) kill(-pgid, SIGKILL);
 }
@@ -142,6 +169,8 @@ RunOutcome run_sandboxed(const RunSpec& spec) {
   static const bool sigpipe_ignored = [] { signal(SIGPIPE, SIG_IGN); return true; }();
   (void)sigpipe_ignored;
 
+  static std::atomic<unsigned long> run_counter{0};
+  const std::string marker = "AETHER_SANDBOX_RUN=" + std::to_string(getpid()) + "-" + std::to_string(run_counter.fetch_add(1));
   RunOutcome out;
   if (spec.argv.empty()) { out.spawn_failed = true; out.error = "empty argv"; return out; }
 
@@ -162,7 +191,7 @@ RunOutcome run_sandboxed(const RunSpec& spec) {
   }
   if (pid == 0) {
     close(in_p[1]); close(out_p[0]); close(err_p[0]); close(ctl_p[0]);
-    child_setup_and_exec(spec, in_p[0], out_p[1], err_p[1], ctl_p[1]);
+    child_setup_and_exec(spec, marker, in_p[0], out_p[1], err_p[1], ctl_p[1]);
     _exit(127);
   }
   close(in_p[0]); close(out_p[1]); close(err_p[1]); close(ctl_p[1]);
@@ -284,6 +313,7 @@ RunOutcome run_sandboxed(const RunSpec& spec) {
     wait4(pid, &status, 0, &ru);
   }
   kill(-pid, SIGKILL);
+  kill_marked(marker);
 
   out.wall_ms = ms_since(start);
   out.cpu_ms = ru.ru_utime.tv_sec * 1000LL + ru.ru_utime.tv_usec / 1000 + ru.ru_stime.tv_sec * 1000LL + ru.ru_stime.tv_usec / 1000;
