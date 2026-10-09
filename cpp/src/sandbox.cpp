@@ -165,7 +165,23 @@ void kill_group(int pgid) {
   if (pgid > 1) kill(-pgid, SIGKILL);
 }
 
-RunOutcome run_sandboxed(const RunSpec& spec) {
+// Total number of kernel scheduling entities right now (4th field of /proc/loadavg).
+static long total_tasks() {
+  std::ifstream f("/proc/loadavg");
+  std::string a, b, c, d;
+  if (!(f >> a >> b >> c >> d)) return 0;
+  size_t slash = d.find('/');
+  return slash == std::string::npos ? 0 : atol(d.c_str() + slash + 1);
+}
+
+RunOutcome run_sandboxed(const RunSpec& spec_in) {
+  // RLIMIT_NPROC is per-uid, so use headroom above what exists now. This is the hard
+  // backstop against fork bombs: the polling monitor alone cannot outrun exponential growth.
+  RunSpec spec = spec_in;
+  if (spec.limits.max_processes == 0) {
+    long t = total_tasks();
+    if (t > 0) spec.limits.max_processes = static_cast<int>(t + 512);
+  }
   static const bool sigpipe_ignored = [] { signal(SIGPIPE, SIG_IGN); return true; }();
   (void)sigpipe_ignored;
 
