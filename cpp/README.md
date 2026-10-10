@@ -40,6 +40,15 @@ Runs are tagged with a unique environment marker. After every run, any leftover 
 - Rate limit is charged only after validation.
 - Unknown tokens or user ids are rejected, not mapped to another user.
 
+## Soak test
+
+`python3 tests/soak.py [N] [CLIENTS]` (run from `cpp/`) starts the engine and fires N mixed submissions from
+concurrent clients in all four languages: correct, wrong answer, compile error, crash, infinite loop,
+output flood and memory hog. It checks every verdict, then that the server kept the same thread count,
+has no leftover child processes or work directories and exits 0 on SIGTERM. Stored output per case is
+capped at 16 KB (the checker still sees the full output), which keeps memory bounded: the same 300-submission
+run went from 97 MB to 22 MB RSS once the cap was added.
+
 ## Network isolation
 
 Each sandboxed program runs in its own empty network namespace (`unshare(CLONE_NEWUSER|CLONE_NEWNET)`),
