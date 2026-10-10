@@ -409,3 +409,19 @@ TEST(persistence_survives_restart_and_compacts) {
   { EngineConfig c; c.persist_path = "/nonexistent_dir/x.jsonl"; Engine e(c); std::string err; e.load_history(err); CHECK(!err.empty()); }
   std::remove(path.c_str());
 }
+
+TEST(engine_drain_waits_for_inflight_and_times_out) {
+  EngineConfig c; c.workers = 1; c.rate_limit = 100;
+  Engine e(c);
+  e.add_problem(sum_prob()); e.add_user({"u", "alice", "", Tier::Free});
+  CHECK(e.drain(10));  // nothing in flight: immediately drained
+  e.start();
+  std::string a = e.submit({"sum", "u", "python", PY}).id, b = e.submit({"sum", "u", "python", PY}).id;
+  CHECK(e.drain(20000));
+  Json j; CHECK(e.submission_json(a, j)); CHECK_EQ(j.str_or("status"), std::string("ACCEPTED"));
+  CHECK(e.submission_json(b, j)); CHECK_EQ(j.str_or("status"), std::string("ACCEPTED"));
+  std::string slow = e.submit({"sum", "u", "python", "import time\ntime.sleep(2)\n"}).id;
+  CHECK(!e.drain(100));  // still running: times out, does not hang
+  CHECK(e.drain(20000));
+  (void)slow;
+}
