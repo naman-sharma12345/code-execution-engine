@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <random>
 #include <set>
+#include <sys/stat.h>
 #include <fstream>
 #include <sstream>
 
@@ -616,7 +617,7 @@ void Engine::persist(const Submission& s) {
   std::string line = record_json(s).dump();
   std::lock_guard<std::mutex> g(persist_m_);
   std::ofstream out(cfg_.persist_path, std::ios::app);
-  if (out) out << line << '\n';
+  if (out) { out << line << '\n'; out.close(); chmod(cfg_.persist_path.c_str(), 0600); }  // holds source code: owner only
 }
 
 size_t Engine::load_history(std::string& err) {
@@ -692,6 +693,7 @@ size_t Engine::load_history(std::string& err) {
     out.flush();
     if (!out) { err = "write failed: " + tmp; return restored; }
   }
+  chmod(tmp.c_str(), 0600);
   if (std::rename(tmp.c_str(), cfg_.persist_path.c_str()) != 0) err = "cannot replace " + cfg_.persist_path;
   return restored;
 }
