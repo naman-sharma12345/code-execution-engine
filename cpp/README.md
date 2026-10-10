@@ -33,3 +33,18 @@ Runs are tagged with a unique environment marker. After every run, any leftover 
 - Infrastructure failures are retried with backoff, then dead-lettered.
 - Rate limit is charged only after validation.
 - Unknown tokens or user ids are rejected, not mapped to another user.
+
+## End-to-end latency
+
+Submit-to-verdict for the A + B problem (5 test cases), 5 runs each, 2 workers, on a 2-core VM,
+measured through the HTTP API (`POST /api/submissions`, then polling `GET /api/submissions/:id`):
+
+| Language   | Median | Min    | Max    |
+|------------|--------|--------|--------|
+| Python     | 65 ms  | 60 ms  | 70 ms  |
+| JavaScript | 179 ms | 173 ms | 230 ms |
+| C++        | 292 ms | 274 ms | 298 ms |
+| Java       | 897 ms | 886 ms | 944 ms |
+
+Most of the time is the language runtime or compiler starting up, not the engine. Throughput with
+4 workers is about 27 Python submissions per second.
