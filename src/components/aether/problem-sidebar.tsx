@@ -65,10 +65,10 @@ export function ProblemSidebar({
                     key={p.id}
                     onClick={() => onSelectProblem(p.id)}
                     className={cn(
-                      'group w-full text-left pl-3 pr-2.5 py-2 rounded-md text-xs transition-colors relative',
+                      'group w-full text-left pl-3.5 pr-2.5 py-2.5 rounded-lg text-xs transition-all duration-150 relative',
                       isActive
-                        ? 'bg-primary/12 text-foreground'
-                        : 'text-foreground/85 hover:bg-accent/60 hover:text-foreground'
+                        ? 'bg-gradient-to-r from-primary/20 to-primary/5 text-foreground ring-1 ring-primary/25 shadow-[0_2px_14px_-6px] shadow-primary/50'
+                        : 'text-foreground/85 hover:bg-accent/60 hover:text-foreground hover:translate-x-0.5'
                     )}
                   >
                     {/* Active rail */}
@@ -110,11 +110,11 @@ export function ProblemSidebar({
               {leaderboard.slice(0, 8).map((u, i) => (
                 <div
                   key={u.id}
-                  className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md hover:bg-accent/40 transition-colors"
+                  className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-accent/50 transition-colors"
                 >
                   <span
                     className={cn(
-                      'inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-mono font-semibold shrink-0 tabular-nums',
+                      'inline-flex items-center justify-center w-6 h-6 rounded-md text-[10px] font-mono font-semibold shrink-0 tabular-nums',
                       i === 0
                         ? 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/25'
                         : i === 1
