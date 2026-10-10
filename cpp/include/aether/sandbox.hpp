@@ -43,6 +43,9 @@ struct RunOutcome {
 
 RunOutcome run_sandboxed(const RunSpec& spec);
 
+// True if sandboxed programs get an empty network namespace on this host (probes once in a forked child).
+bool network_isolation_available();
+
 // Best-effort kill of an entire process group (used by tests / shutdown).
 void kill_group(int pgid);
 
