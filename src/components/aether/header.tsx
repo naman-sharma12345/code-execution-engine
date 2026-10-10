@@ -51,11 +51,11 @@ export function Header({
   }, [])
 
   return (
-    <header className="border-b border-border bg-sidebar/60 backdrop-blur-md shrink-0 z-50">
-      <div className="flex items-center justify-between h-12 px-4">
+    <header className="relative border-b border-border bg-sidebar/70 backdrop-blur-xl shrink-0 z-50 before:pointer-events-none before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/60 before:to-transparent">
+      <div className="flex items-center justify-between h-14 px-5">
         {/* Wordmark */}
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="relative flex items-center justify-center w-6 h-6">
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary/25 to-primary/5 ring-1 ring-primary/30 shadow-[0_0_18px_-4px] shadow-primary/60">
             {/* Logo mark — a stylized "Æ" made from two strokes */}
             <svg
               viewBox="0 0 24 24"
@@ -80,7 +80,7 @@ export function Header({
             </svg>
           </div>
           <div className="flex items-baseline gap-1.5 min-w-0">
-            <h1 className="text-[13px] font-semibold tracking-tight truncate">
+            <h1 className="text-sm font-semibold tracking-tight truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               AetherRun
             </h1>
             <span className="text-[11px] text-muted-foreground/70 font-mono hidden sm:inline truncate">
@@ -90,7 +90,7 @@ export function Header({
         </div>
 
         {/* Single live status indicator — engine online */}
-        <div className="hidden md:flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
+        <div className={cn("hidden md:flex items-center gap-2 text-[11px] font-mono text-muted-foreground rounded-full border px-3 py-1 transition-colors", isLive ? "border-emerald-500/25 bg-emerald-500/5" : "border-border/60 bg-secondary/30")}>
           <span className="relative flex items-center justify-center w-1.5 h-1.5">
             <span
               className={cn(
@@ -115,18 +115,8 @@ export function Header({
               if (u) onUserChange(u)
             }}
           >
-            <SelectTrigger className="h-8 w-[180px] text-xs gap-1.5 px-2.5 bg-secondary/40 hover:bg-secondary/70 border-border/60 transition-colors">
+            <SelectTrigger className="h-9 w-[190px] text-xs gap-1.5 px-2.5 rounded-lg bg-secondary/40 hover:bg-secondary/70 border-border/60 hover:border-primary/40 transition-colors">
               <span className="flex items-center gap-2 min-w-0">
-                <span
-                  className={cn(
-                    'inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-semibold font-mono shrink-0',
-                    currentUser?.subscriptionTier === 'PREMIUM'
-                      ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/30'
-                      : 'bg-muted text-muted-foreground'
-                  )}
-                >
-                  {currentUser?.username?.[0]?.toUpperCase() ?? '?'}
-                </span>
                 <SelectValue placeholder="Select user…" />
               </span>
             </SelectTrigger>

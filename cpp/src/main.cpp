@@ -1,0 +1,73 @@
+// aetherrun: C++17 code execution engine. Configuration via environment:
+//   AETHER_PORT (3001)  AETHER_HOST (127.0.0.1)  AETHER_WORKERS (2)  AETHER_RATE_LIMIT (5 per window)  AETHER_MAX_SUBMISSIONS (5000)  AETHER_PROBLEMS (data/problems.json)  AETHER_PERSIST (off; path to a JSONL history file)  AETHER_DRAIN_MS (10000)
+#include <signal.h>
+
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
+#include "aether/engine.hpp"
+#include "aether/sandbox.hpp"
+#include "aether/server.hpp"
+
+using namespace aether;
+
+static volatile sig_atomic_t g_stop = 0;
+static void on_signal(int) { g_stop = 1; }
+
+static long env_int(const char* k, long d, long lo, long hi) {
+  const char* v = std::getenv(k);
+  if (!v || !*v) return d;
+  char* end = nullptr;
+  long x = std::strtol(v, &end, 10);
+  if (*end != '\0' || x < lo || x > hi) { std::cerr << "invalid " << k << "=" << v << "\n"; std::exit(2); }
+  return x;
+}
+
+int main() {
+  EngineConfig ec;
+  ec.workers = static_cast<int>(env_int("AETHER_WORKERS", 2, 1, 64));
+  ec.rate_limit = static_cast<int>(env_int("AETHER_RATE_LIMIT", 5, 1, 1000000));
+  ec.max_submissions_kept = static_cast<size_t>(env_int("AETHER_MAX_SUBMISSIONS", 5000, 1, 100000000));
+  if (const char* pp = std::getenv("AETHER_PERSIST")) ec.persist_path = pp;
+  Engine engine(ec);
+  const char* pf = std::getenv("AETHER_PROBLEMS");
+  std::string path = pf ? pf : "data/problems.json";
+  std::ifstream f(path);
+  if (!f) { std::cerr << "cannot read problems file: " << path << "\n"; return 2; }
+  std::stringstream ss; ss << f.rdbuf();
+  try { engine.load_problems_json(ss.str()); } catch (const std::exception& e) { std::cerr << "bad problems file: " << e.what() << "\n"; return 2; }
+  engine.add_user({"user_free", "demo_free", "demo_free@aether.run", Tier::Free});
+  engine.add_user({"user_pro", "demo_pro", "demo_pro@aether.run", Tier::Premium});
+  if (!ec.persist_path.empty()) {
+    std::string perr;
+    size_t n = engine.load_history(perr);
+    if (!perr.empty()) { std::cerr << "persistence: " << perr << "\n"; return 2; }
+    std::cout << "restored " << n << " submissions from " << ec.persist_path << std::endl;
+  }
+  std::cout << "network isolation for submissions: "
+            << (network_isolation_available() ? "on" : "OFF (user namespaces unavailable; run in a container with --network none)") << std::endl;
+  engine.start();
+
+  ServerConfig sc;
+  sc.port = static_cast<int>(env_int("AETHER_PORT", 3001, 0, 65535));
+  if (const char* h = std::getenv("AETHER_HOST")) sc.host = h;
+  Server server(engine, sc);
+  std::string err;
+  if (!server.start(err)) { std::cerr << "server: " << err << "\n"; return 1; }
+  struct sigaction sa{};
+  sa.sa_handler = on_signal;
+  sigaction(SIGINT, &sa, nullptr);
+  sigaction(SIGTERM, &sa, nullptr);
+  std::cout << "AetherRun (C++) listening on http://" << sc.host << ":" << server.port() << "  workers=" << ec.workers << std::endl;
+  while (!g_stop) { struct timespec ts{0, 100 * 1000 * 1000}; nanosleep(&ts, nullptr); }
+  std::cout << "shutting down" << std::endl;
+  // Stop taking new connections' work after letting accepted submissions finish (bounded).
+  int drain_ms = static_cast<int>(env_int("AETHER_DRAIN_MS", 10000, 0, 600000));
+  bool drained = engine.drain(drain_ms);
+  std::cout << (drained ? "drained" : "drain timed out, dropping unfinished submissions") << std::endl;
+  server.stop();
+  engine.stop();
+  return 0;
+}

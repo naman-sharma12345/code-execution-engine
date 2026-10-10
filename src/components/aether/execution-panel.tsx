@@ -134,7 +134,7 @@ export function ExecutionPanel({
       {snapshot.currentStatus && (
         <div
           className={cn(
-            'relative px-4 py-3 border-b shrink-0 bg-gradient-to-r overflow-hidden',
+            'relative px-4 py-4 border-b shrink-0 bg-gradient-to-r overflow-hidden shadow-[inset_0_-24px_32px_-28px] shadow-current/20',
             bannerTone
           )}
         >
@@ -193,7 +193,7 @@ export function ExecutionPanel({
                 key={tc.order}
                 title={`Case ${tc.order + 1}: ${tc.status} · ${tc.time}ms · ${(tc.mem / 1024).toFixed(1)}MB`}
                 className={cn(
-                  'aspect-square rounded border flex items-center justify-center text-[10px] font-mono font-semibold transition-all tabular-nums',
+                  'aspect-square rounded-md border flex items-center justify-center text-[11px] font-mono font-semibold transition-all duration-150 tabular-nums hover:scale-110 hover:z-10 cursor-default',
                   TESTCASE_BORDER[tc.status]
                 )}
               >

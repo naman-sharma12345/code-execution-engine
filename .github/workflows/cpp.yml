@@ -1,0 +1,40 @@
+name: cpp
+on:
+  push:
+    paths: ["cpp/**", ".github/workflows/cpp.yml"]
+  pull_request:
+    paths: ["cpp/**", ".github/workflows/cpp.yml"]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        san: ["", "-fsanitize=address,undefined", "-fsanitize=thread -O1 -g"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cmake -S cpp -B build -DCMAKE_CXX_FLAGS="${{ matrix.san }}" && cmake --build build -j2
+      - name: Test
+        run: |
+          if [ -z "${{ matrix.san }}" ]; then ./build/aether_tests; else
+            for f in json checker rate_limiter queue engine; do ./build/aether_tests $f; done
+          fi
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t aetherrun-cpp cpp
+      - name: Smoke test
+        run: |
+          docker run -d --name ae -p 3001:3001 -e AETHER_RATE_LIMIT=100 aetherrun-cpp
+          for i in $(seq 1 20); do curl -sf localhost:3001/health && break; sleep 1; done
+          curl -sf localhost:3001/api/problems | grep -q prob_sum
+          SID=$(curl -sf -H 'Content-Type: application/json' -d '{"problemId":"prob_sum","language":"python","code":"a,b=map(int,input().split())\nprint(a+b)"}' localhost:3001/api/submissions | sed -E 's/.*"submissionId":"([^"]+)".*/\1/')
+          for i in $(seq 1 30); do
+            R=$(curl -sf localhost:3001/api/submissions/$SID)
+            echo "$R" | grep -q '"status":"ACCEPTED"' && echo "accepted" && docker logs ae | grep 'network isolation' && exit 0
+            sleep 1
+          done
+          echo "$R"; docker logs ae; exit 1

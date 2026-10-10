@@ -1,0 +1,104 @@
+# AetherRun C++ engine
+
+A dependency-free C++17 rewrite of the AetherRun execution backend. It serves the same `/api/*` JSON contract the Next.js frontend uses.
+
+## Build and test
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j2
+    ./build/aether_tests          # 79 tests
+    AETHER_PORT=3001 AETHER_PROBLEMS=data/problems.json ./build/aetherrun
+
+| Env var | Default | Meaning |
+|---|---|---|
+| `AETHER_PORT` / `AETHER_HOST` | 3001 / 127.0.0.1 | listen address |
+| `AETHER_WORKERS` | 2 | concurrent judge workers |
+| `AETHER_RATE_LIMIT` | 5 | submissions per user per minute |
+| `AETHER_MAX_SUBMISSIONS` | 5000 | finished submissions kept (oldest evicted) |
+| `AETHER_PROBLEMS` | data/problems.json | problem catalog |
+| `AETHER_PERSIST` | off | JSONL history file, see Persistence |
+| `AETHER_DRAIN_MS` | 10000 | max wait for in-flight submissions on shutdown |
+| `AETHER_NO_NETNS` | unset | `1` disables the per-run network namespace |
+
+Benchmark (2-core sandbox VM, 4 workers, Python submissions, 16 concurrent clients): 80/80 ACCEPTED, about 27 judged submissions per second end to end.
+
+## Use with the existing UI
+Run the server, then start Next.js with `AETHER_CPP_BACKEND=http://127.0.0.1:3001`. All `/api/*` calls are proxied.
+
+## Docker
+    docker build -t aetherrun-cpp cpp && docker run -p 3001:3001 aetherrun-cpp
+
+Verified in CI: under Docker's default seccomp profile the engine logs
+`network isolation for submissions: OFF`, because the container may not create user namespaces. For
+untrusted code, put the container on an internal network with no route out (for example a
+`docker network create --internal` network shared only with the web frontend) or run it with a seccomp
+profile that allows `unshare`; the startup log tells you which case you are in.
+
+## Sanitizers
+ASAN+UBSAN run clean on the json, checker, rate limiter, queue and engine suites (CI runs them). ThreadSanitizer on GCC 11 reports false races and a "double lock" on every `condition_variable` timed wait, because libtsan 11 does not intercept `pthread_cond_clockwait`. With the waits switched to `system_clock` the queue and engine suites are TSAN-clean, so the reports are tool noise, not engine bugs. Use GCC 13+ or clang for TSAN.
+
+## Sandbox
+fork/exec per run with rlimits (CPU, file size, processes), its own process group, wall-clock kill, live memory monitoring, an output cap, an empty network namespace, a private work-dir root and a non-dumpable server (see below). This is not a container: run it inside Docker or a VM for untrusted code.
+
+## Sandbox escape hardening
+See also Network isolation below.
+Runs are tagged with a unique environment marker. After every run, any leftover process carrying the marker is killed, including ones that called `setsid()` to leave the process group.
+
+## Fixes over the TypeScript version
+- Exact checker no longer rejects output missing a trailing newline.
+- Memory limit is enforced live, not after the fact.
+- Hidden test input and expected output are redacted from responses.
+- Infrastructure failures are retried with backoff, then dead-lettered.
+- Rate limit is charged only after validation.
+- Unknown tokens or user ids are rejected, not mapped to another user.
+
+## Soak test
+
+`python3 tests/soak.py [N] [CLIENTS]` (run from `cpp/`) starts the engine and fires N mixed submissions from
+concurrent clients in all four languages: correct, wrong answer, compile error, crash, infinite loop,
+output flood and memory hog. It checks every verdict, then that the server kept the same thread count,
+has no leftover child processes or work directories and exits 0 on SIGTERM. Stored output per case is
+capped at 16 KB (the checker still sees the full output), which keeps memory bounded: the same 300-submission
+run went from 97 MB to 22 MB RSS once the cap was added.
+
+## Network isolation
+
+Each sandboxed program runs in its own empty network namespace (`unshare(CLONE_NEWUSER|CLONE_NEWNET)`),
+so submitted code cannot reach the engine's own API, other host services or the internet. This is best
+effort: it needs unprivileged user namespaces, which some hosts and the default Docker seccomp profile
+refuse. In that case programs run without it (set `AETHER_NO_NETNS=1` to turn it off explicitly). To
+make a deployment fail loudly instead, run the tests with `AETHER_REQUIRE_NETNS=1` on the target host.
+For untrusted production use, also run the container with `--network none`.
+
+The server also marks itself non-dumpable (`PR_SET_DUMPABLE=0`), so even where user namespaces are
+refused, a submitted program cannot read the server's working directory, environment or memory through
+`/proc/<parent pid>/`. Before this, such a program could read the problem file, hidden expected outputs
+included. Files at a known absolute path are still readable by a same-uid program, so for real isolation
+run the engine in a container whose problem data is not readable by the sandbox user.
+
+## Persistence (optional)
+
+Set `AETHER_PERSIST=/path/history.jsonl` and finished submissions (code, verdict, per-case results with
+stdout/stderr capped at 4 KB) are appended as one JSON line each. On start the file is read back, torn or
+corrupt lines are skipped, only the newest `AETHER_MAX_SUBMISSIONS` records are kept, and the file is
+compacted atomically. History, leaderboard and SSE replay of old submissions then survive restarts.
+Hidden-test output stays redacted. Unset, the engine is purely in-memory as before.
+
+## Graceful shutdown
+
+On SIGTERM/SIGINT the server finishes accepted submissions before exiting, for at most
+`AETHER_DRAIN_MS` (default 10000). Anything still unfinished after that is dropped, and the log says so.
+With `AETHER_PERSIST` set, drained submissions are written to the history file before exit.
+
+## End-to-end latency
+
+Submit-to-verdict for the A + B problem (5 test cases), 5 runs each, 2 workers, on a 2-core VM,
+measured through the HTTP API (`POST /api/submissions`, then polling `GET /api/submissions/:id`):
+
+| Language   | Median | Min    | Max    |
+|------------|--------|--------|--------|
+| Python     | 65 ms  | 60 ms  | 70 ms  |
+| JavaScript | 179 ms | 173 ms | 230 ms |
+| C++        | 292 ms | 274 ms | 298 ms |
+| Java       | 897 ms | 886 ms | 944 ms |
+
+Most of the time is the language runtime or compiler starting up, not the engine. Throughput with
+4 workers is about 27 Python submissions per second.
