@@ -425,3 +425,16 @@ TEST(engine_drain_waits_for_inflight_and_times_out) {
   CHECK(e.drain(20000));
   (void)slow;
 }
+
+TEST(http_connection_cap_returns_503_and_recovers) {
+  ServerConfig sc; sc.max_connections = 3; sc.read_timeout_ms = 1500;
+  Fixture f(100, sc);
+  int p = f.server.port();
+  std::vector<int> idle;
+  for (int i = 0; i < 3; i++) { int fd = connect_to(p); CHECK(fd >= 0); idle.push_back(fd); }
+  usleep(200 * 1000);  // let the server count them
+  CHECK_EQ(http(p, "GET", "/health").status, 503);  // over the cap: rejected, not queued or crashed
+  for (int fd : idle) close(fd);
+  usleep(300 * 1000);
+  CHECK_EQ(http(p, "GET", "/health").status, 200);  // capacity is released
+}
