@@ -129,3 +129,13 @@ TEST(judge_empty_code_does_not_crash) {
   Verdict v = judge(sum_problem(), Language::Python, "");
   CHECK(v.status == Status::WrongAnswer || v.status == Status::RuntimeError || v.status == Status::Failed);
 }
+
+TEST(judge_programs_cannot_list_other_work_dirs) {
+  Problem p = sum_problem(4000);
+  p.tests = {{"t0", "1 2\n", "x\n", false, 0}};
+  const char* code = "import os\nd=os.path.dirname(os.getcwd())\ntry:\n print('LISTED', os.listdir(d))\nexcept Exception as e:\n print('DENIED')\n";
+  Verdict v = judge(p, Language::Python, code);
+  CHECK_EQ(v.cases.size(), 1u);
+  if (v.cases[0].stdout_text.find("DENIED") == std::string::npos) std::cerr << "  out=" << v.cases[0].stdout_text << " err=" << v.cases[0].stderr_text << "\n";
+  CHECK(v.cases[0].stdout_text.find("DENIED") != std::string::npos);
+}
