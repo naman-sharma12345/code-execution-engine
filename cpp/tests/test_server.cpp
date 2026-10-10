@@ -339,3 +339,20 @@ TEST(http_stats_shape_matches_frontend_contract) {
   CHECK(st.find("workers")->int_or("count") == 2);
   CHECK(st.find("uptimeMs") != nullptr);
 }
+
+TEST(http_odd_but_valid_code_payloads) {
+  Fixture f;
+  int p = f.server.port();
+  // Surrogate-pair emoji and tabs are fine and get judged.
+  Reply ok = post_sub(p, R"({"problemId":"sum","language":"python","code":"a,b=map(int,input().split())\nprint(a+b)\n# \ud83d\ude80 \t end"})");
+  if (ok.status != 201) std::cerr << "  body: " << ok.body << "\n";
+  CHECK_EQ(ok.status, 201);
+  // A NUL byte in source is rejected on purpose.
+  CHECK_EQ(post_sub(p, R"({"problemId":"sum","language":"python","code":"print(1)\u0000"})").status, 400);
+  // Truncated escape is a clean 400.
+  CHECK_EQ(post_sub(p, R"({"problemId":"sum","language":"python","code":"\u12"})").status, 400);
+  // Lone surrogate: any clean response is fine, the server must stay up.
+  int st = post_sub(p, R"({"problemId":"sum","language":"python","code":"\ud83d"})").status;
+  CHECK(st == 400 || st == 200 || st == 202);
+  CHECK_EQ(http(p, "GET", "/health").status, 200);
+}
