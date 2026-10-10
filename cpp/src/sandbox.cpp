@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <sched.h>
 #include <signal.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -16,6 +17,7 @@
 #include <iterator>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -84,6 +86,10 @@ TreeStat scan_group(pid_t pgid) {
 
 void child_setup_and_exec(const RunSpec& spec, const std::string& marker, int in_fd, int out_fd, int err_fd, int errpipe) {
   setsid();  // own session + process group: lets the parent kill the whole tree
+  // Best effort: give the program an empty network namespace (no interfaces, not even a usable
+  // loopback), so submitted code cannot reach the host's services or the internet. Needs unprivileged
+  // user namespaces; where the kernel refuses, we carry on without (the test reports which case it is).
+  if (!std::getenv("AETHER_NO_NETNS")) unshare(CLONE_NEWUSER | CLONE_NEWNET);
   dup2(in_fd, 0);
   dup2(out_fd, 1);
   dup2(err_fd, 2);
