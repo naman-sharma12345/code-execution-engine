@@ -17,6 +17,12 @@ Run the server, then start Next.js with `AETHER_CPP_BACKEND=http://127.0.0.1:300
 ## Docker
     docker build -t aetherrun-cpp cpp && docker run -p 3001:3001 aetherrun-cpp
 
+Verified in CI: under Docker's default seccomp profile the engine logs
+`network isolation for submissions: OFF`, because the container may not create user namespaces. For
+untrusted code, put the container on an internal network with no route out (for example a
+`docker network create --internal` network shared only with the web frontend) or run it with a seccomp
+profile that allows `unshare`; the startup log tells you which case you are in.
+
 ## Sanitizers
 ASAN+UBSAN run clean on the json, checker, rate limiter, queue and engine suites (CI runs them). ThreadSanitizer on GCC 11 reports false races and a "double lock" on every `condition_variable` timed wait, because libtsan 11 does not intercept `pthread_cond_clockwait`. With the waits switched to `system_clock` the queue and engine suites are TSAN-clean, so the reports are tool noise, not engine bugs. Use GCC 13+ or clang for TSAN.
 
