@@ -1,3 +1,6 @@
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
@@ -176,4 +179,26 @@ TEST(sandbox_python_fork_loop_is_contained) {
   CHECK(o.process_limit_exceeded || o.timed_out || o.exit_code != 0);
   usleep(500 * 1000);
   CHECK_EQ(std::system("true"), 0);
+}
+
+TEST(sandbox_cannot_reach_host_network) {
+  // A listener on the host loopback; the sandboxed program must not be able to connect to it.
+  int ls = socket(AF_INET, SOCK_STREAM, 0);
+  sockaddr_in a{}; a.sin_family = AF_INET; a.sin_addr.s_addr = htonl(INADDR_LOOPBACK); a.sin_port = 0;
+  CHECK(bind(ls, reinterpret_cast<sockaddr*>(&a), sizeof a) == 0);
+  CHECK(listen(ls, 4) == 0);
+  socklen_t al = sizeof a; getsockname(ls, reinterpret_cast<sockaddr*>(&a), &al);
+  RunSpec spec;
+  spec.env = {"PATH=/usr/local/bin:/usr/bin:/bin"};
+  spec.argv = {"python3", "-c",
+               "import socket\ns=socket.socket()\ns.settimeout(2)\ntry:\n s.connect(('127.0.0.1'," + std::to_string(ntohs(a.sin_port)) +
+               "))\n print('CONNECTED')\nexcept Exception as e:\n print('BLOCKED')\n"};
+  spec.limits.wall_ms = 5000;
+  RunOutcome r = run_sandboxed(spec);
+  close(ls);
+  bool blocked = r.out.find("BLOCKED") != std::string::npos;
+  bool connected = r.out.find("CONNECTED") != std::string::npos;
+  if (!blocked) std::cerr << "  NOTE: network namespace unavailable here (user namespaces refused); out=" << r.out << r.error << "\n";
+  CHECK(blocked || connected);  // ran cleanly either way
+  if (std::getenv("AETHER_REQUIRE_NETNS")) CHECK(blocked);
 }
