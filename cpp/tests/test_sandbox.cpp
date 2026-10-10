@@ -202,3 +202,17 @@ TEST(sandbox_cannot_reach_host_network) {
   CHECK(blocked || connected);  // ran cleanly either way
   if (std::getenv("AETHER_REQUIRE_NETNS")) CHECK(blocked);
 }
+
+TEST(sandbox_cannot_read_server_through_proc) {
+  // Worst case: user namespaces unavailable, so the program has the server's uid. It must still not be
+  // able to read the server's working directory or memory via /proc/<parent>/.
+  setenv("AETHER_NO_NETNS", "1", 1);
+  RunSpec spec;
+  spec.env = {"PATH=/usr/local/bin:/usr/bin:/bin"};
+  spec.argv = {"python3", "-c",
+               "import os\nfor p in ('cwd/.', 'environ', 'mem'):\n try:\n  open('/proc/%d/%s' % (os.getppid(), p)).read(1)\n  print('LEAK', p)\n except Exception as e:\n  print('SAFE', p)\n"};
+  RunOutcome r = run_sandboxed(spec);
+  unsetenv("AETHER_NO_NETNS");
+  CHECK(r.out.find("LEAK") == std::string::npos);
+  CHECK(r.out.find("SAFE environ") != std::string::npos);
+}
