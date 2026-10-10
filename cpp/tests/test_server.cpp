@@ -1,6 +1,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <fstream>
@@ -403,6 +404,8 @@ TEST(persistence_survives_restart_and_compacts) {
     CHECK(done);
     CHECK_EQ(evs.back().str_or("type"), std::string("final"));
   }
+  // History holds submitted source, so the file is owner-only.
+  { struct stat st{}; CHECK_EQ(stat(path.c_str(), &st), 0); CHECK_EQ(static_cast<int>(st.st_mode & 0777), 0600); }
   // The file was compacted: exactly the two good records remain.
   { std::ifstream in(path); int n = 0; std::string l; while (std::getline(in, l)) n++; CHECK_EQ(n, 2); }
   // A different data file with an unwritable directory reports an error instead of crashing.
