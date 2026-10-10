@@ -7,6 +7,9 @@
 #include <cstring>
 #include <filesystem>
 
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "aether/checker.hpp"
 #include "aether/languages.hpp"
 #include "aether/sandbox.hpp"
@@ -16,8 +19,20 @@ namespace {
 
 struct WorkDir {
   std::string path;
+  // All work dirs live under one private root that is searchable and writable but not listable (mode 0300), so a
+  // submitted program cannot enumerate other submissions' directories and read their source.
+  static std::filesystem::path root() {
+    static const std::filesystem::path r = [] {
+      std::filesystem::path p = std::filesystem::temp_directory_path() / ("aether-work-" + std::to_string(getuid()));
+      std::error_code ec;
+      std::filesystem::create_directories(p, ec);
+      chmod(p.c_str(), 0300);  // owner: write+search only (no read => no listing); the server never lists it
+      return p;
+    }();
+    return r;
+  }
   WorkDir() {
-    std::string tmpl = (std::filesystem::temp_directory_path() / "aether-XXXXXX").string();
+    std::string tmpl = (root() / "run-XXXXXX").string();
     std::vector<char> b(tmpl.begin(), tmpl.end());
     b.push_back('\0');
     if (mkdtemp(b.data())) path = b.data();
