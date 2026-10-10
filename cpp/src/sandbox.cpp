@@ -353,3 +353,15 @@ RunOutcome run_sandboxed(const RunSpec& spec_in) {
 }
 
 }  // namespace aether
+
+namespace aether {
+bool network_isolation_available() {
+  if (std::getenv("AETHER_NO_NETNS")) return false;
+  pid_t pid = fork();
+  if (pid < 0) return false;
+  if (pid == 0) _exit(unshare(CLONE_NEWUSER | CLONE_NEWNET) == 0 ? 0 : 1);
+  int st = 0;
+  waitpid(pid, &st, 0);
+  return WIFEXITED(st) && WEXITSTATUS(st) == 0;
+}
+}  // namespace aether
