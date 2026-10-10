@@ -34,6 +34,14 @@ Runs are tagged with a unique environment marker. After every run, any leftover 
 - Rate limit is charged only after validation.
 - Unknown tokens or user ids are rejected, not mapped to another user.
 
+## Persistence (optional)
+
+Set `AETHER_PERSIST=/path/history.jsonl` and finished submissions (code, verdict, per-case results with
+stdout/stderr capped at 4 KB) are appended as one JSON line each. On start the file is read back, torn or
+corrupt lines are skipped, only the newest `AETHER_MAX_SUBMISSIONS` records are kept, and the file is
+compacted atomically. History, leaderboard and SSE replay of old submissions then survive restarts.
+Hidden-test output stays redacted. Unset, the engine is purely in-memory as before.
+
 ## End-to-end latency
 
 Submit-to-verdict for the A + B problem (5 test cases), 5 runs each, 2 workers, on a 2-core VM,
