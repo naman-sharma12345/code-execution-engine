@@ -113,3 +113,19 @@ TEST(judge_sandbox_hides_server_environment) {
   Verdict v = judge(p, Language::Python, "import os\nprint(os.environ.get('AETHER_API_SECRET','NONE'))\n");
   CHECK(v.status == Status::Accepted);
 }
+
+TEST(judge_script_syntax_errors_are_runtime_errors) {
+  Verdict p = judge(sum_problem(), Language::Python, "def (:\n");
+  CHECK(p.status == Status::RuntimeError);
+  Verdict j = judge(sum_problem(), Language::JavaScript, "console.log(;");
+  CHECK(j.status == Status::RuntimeError);
+}
+TEST(judge_crlf_and_trailing_space_output_accepted) {
+  Verdict v = judge(sum_problem(), Language::Python, "a,b=map(int,input().split())\nprint(str(a+b)+'  \\r')\n");
+  if (v.status != Status::Accepted) std::cerr << "  " << to_string(v.status) << "\n";
+  CHECK(v.status == Status::Accepted);
+}
+TEST(judge_empty_code_does_not_crash) {
+  Verdict v = judge(sum_problem(), Language::Python, "");
+  CHECK(v.status == Status::WrongAnswer || v.status == Status::RuntimeError || v.status == Status::Failed);
+}
