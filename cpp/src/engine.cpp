@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <random>
 #include <set>
+#include <fstream>
+#include <sstream>
 
 #include "aether/judge.hpp"
 
@@ -282,6 +284,11 @@ void Engine::process(const std::string& id, int attempt, int max_attempts, bool&
     std::lock_guard<std::mutex> g(m_);
     auto it = subs_.find(id);
     if (it != subs_.end()) it->second->done = true;  // set before the final event so waiters see both
+  }
+  if (!cfg_.persist_path.empty()) {
+    std::shared_ptr<Submission> sp;
+    { std::lock_guard<std::mutex> g(m_); auto it = subs_.find(id); if (it != subs_.end()) sp = it->second; }
+    if (sp) persist(*sp);
   }
   push_event(id, std::move(final_ev));
 }
@@ -560,6 +567,127 @@ Json Engine::stats() const {
   j["throughput"] = std::move(t);
   j["uptimeMs"] = now_ms() - started_at_;
   return j;
+}
+
+}  // namespace aether
+
+namespace aether {
+
+namespace {
+std::string clip(const std::string& s, size_t n = 4096) { return s.size() > n ? s.substr(0, n) : s; }
+bool parse_status(const std::string& n, Status& out) {
+  for (Status st : {Status::Pending, Status::Compiling, Status::Running, Status::Accepted, Status::WrongAnswer,
+                    Status::TimeLimit, Status::MemoryLimit, Status::RuntimeError, Status::Failed})
+    if (n == to_string(st)) { out = st; return true; }
+  return false;
+}
+bool parse_case_status(const std::string& n, CaseStatus& out) {
+  for (CaseStatus st : {CaseStatus::Accepted, CaseStatus::WrongAnswer, CaseStatus::TimeLimit, CaseStatus::MemoryLimit,
+                        CaseStatus::RuntimeError, CaseStatus::Skipped})
+    if (n == to_string(st)) { out = st; return true; }
+  return false;
+}
+Json record_json(const Submission& s) {
+  Json j = Json::object();
+  j["id"] = s.id; j["problemId"] = s.problem_id; j["userId"] = s.user_id; j["language"] = to_string(s.language);
+  j["tier"] = to_string(s.tier); j["status"] = to_string(s.verdict.status); j["code"] = s.code;
+  j["timeMs"] = s.verdict.time_ms; j["memoryKb"] = s.verdict.memory_kb; j["passed"] = s.verdict.passed;
+  j["total"] = s.verdict.total; j["error"] = s.verdict.error_message; j["compile"] = clip(s.verdict.compile_output);
+  j["createdAt"] = s.created_at; j["completedAt"] = s.completed_at;
+  Json cs = Json::array();
+  for (auto& c : s.verdict.cases) {
+    Json cj = Json::object();
+    cj["id"] = c.test_case_id; cj["status"] = to_string(c.status); cj["stdout"] = clip(c.stdout_text);
+    cj["stderr"] = clip(c.stderr_text); cj["exit"] = c.exit_code; cj["time"] = c.time_ms; cj["mem"] = c.memory_kb;
+    cs.push(std::move(cj));
+  }
+  j["cases"] = std::move(cs);
+  return j;
+}
+}  // namespace
+
+void Engine::persist(const Submission& s) {
+  std::string line = record_json(s).dump();
+  std::lock_guard<std::mutex> g(persist_m_);
+  std::ofstream out(cfg_.persist_path, std::ios::app);
+  if (out) out << line << '\n';
+}
+
+size_t Engine::load_history(std::string& err) {
+  if (cfg_.persist_path.empty()) return 0;
+  std::vector<std::string> lines;
+  {
+    std::ifstream in(cfg_.persist_path);
+    std::string ln;
+    while (in && std::getline(in, ln)) if (!ln.empty()) lines.push_back(ln);
+  }
+  // Records are written in completion order; restore them in creation order.
+  {
+    std::vector<std::pair<long long, std::string>> keyed;
+    for (auto& l : lines) {
+      long long created = 0;
+      try { Json j = Json::parse(l); if (j.is_object()) created = j.int_or("createdAt"); } catch (const JsonError&) {}
+      keyed.emplace_back(created, std::move(l));
+    }
+    std::stable_sort(keyed.begin(), keyed.end(), [](auto& a, auto& b) { return a.first < b.first; });
+    lines.clear();
+    for (auto& k : keyed) lines.push_back(std::move(k.second));
+  }
+  // Keep only the newest max_submissions_kept records.
+  size_t from = lines.size() > cfg_.max_submissions_kept ? lines.size() - cfg_.max_submissions_kept : 0;
+  std::vector<std::string> kept;
+  size_t restored = 0;
+  for (size_t i = from; i < lines.size(); i++) {
+    Json j;
+    try { j = Json::parse(lines[i]); } catch (const JsonError&) { continue; }  // torn/corrupt line: skip
+    if (!j.is_object()) continue;
+    auto s = std::make_shared<Submission>();
+    s->id = j.str_or("id"); s->problem_id = j.str_or("problemId"); s->user_id = j.str_or("userId");
+    s->code = j.str_or("code");
+    Status st = Status::Failed;
+    if (s->id.empty() || !parse_language(j.str_or("language"), s->language) || !parse_status(j.str_or("status"), st) || !is_terminal(st)) continue;
+    s->tier = j.str_or("tier") == "PREMIUM" ? Tier::Premium : Tier::Free;
+    s->status = st;
+    s->verdict.status = st;
+    s->verdict.time_ms = j.int_or("timeMs"); s->verdict.memory_kb = j.int_or("memoryKb");
+    s->verdict.passed = static_cast<int>(j.int_or("passed")); s->verdict.total = static_cast<int>(j.int_or("total"));
+    s->verdict.error_message = j.str_or("error"); s->verdict.compile_output = j.str_or("compile");
+    s->created_at = j.int_or("createdAt"); s->completed_at = j.int_or("completedAt");
+    if (auto* cs = j.find("cases"); cs && cs->is_array()) {
+      for (auto& cj : cs->as_array()) {
+        CaseResult c; CaseStatus cst = CaseStatus::Skipped;
+        parse_case_status(cj.str_or("status"), cst);
+        c.status = cst; c.test_case_id = cj.str_or("id"); c.stdout_text = cj.str_or("stdout"); c.stderr_text = cj.str_or("stderr");
+        c.exit_code = static_cast<int>(cj.int_or("exit")); c.time_ms = cj.int_or("time"); c.memory_kb = cj.int_or("mem");
+        s->verdict.cases.push_back(std::move(c));
+      }
+    }
+    s->done = true;
+    Json fin = Json::object();
+    fin["type"] = "final"; fin["status"] = to_string(st); fin["submissionId"] = s->id; fin["timestamp"] = s->completed_at;
+    {
+      std::lock_guard<std::mutex> g(m_);
+      if (subs_.count(s->id)) continue;
+      auto p = problems_.find(s->problem_id);
+      fin["result"] = verdict_json(*s, p == problems_.end() ? nullptr : &p->second);
+      s->events.push_back(std::move(fin));
+      sub_order_.push_back(s->id);
+      subs_[s->id] = std::move(s);
+    }
+    kept.push_back(lines[i]);
+    restored++;
+  }
+  // Compact: rewrite the file atomically with only the records we kept.
+  std::string tmp = cfg_.persist_path + ".tmp";
+  {
+    std::ofstream out(tmp, std::ios::trunc);
+    if (!out) { err = "cannot write " + tmp; return restored; }
+    for (auto& l : kept) out << l << '\n';
+    out.flush();
+    if (!out) { err = "write failed: " + tmp; return restored; }
+  }
+  if (std::rename(tmp.c_str(), cfg_.persist_path.c_str()) != 0) err = "cannot replace " + cfg_.persist_path;
+  return restored;
 }
 
 }  // namespace aether
