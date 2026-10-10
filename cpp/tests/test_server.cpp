@@ -356,3 +356,56 @@ TEST(http_odd_but_valid_code_payloads) {
   CHECK(st == 400 || st == 200 || st == 202);
   CHECK_EQ(http(p, "GET", "/health").status, 200);
 }
+
+static Problem sum_prob() {
+  Problem p; p.id = "sum"; p.time_limit_ms = 3000;
+  p.tests = {{"s0", "3 5\n", "8\n", false, 0}, {"h1", "1 2\n", "3\n", true, 1}};
+  return p;
+}
+TEST(persistence_survives_restart_and_compacts) {
+  std::string path = "/tmp/aether_persist_test_" + std::to_string(getpid()) + ".jsonl";
+  std::remove(path.c_str());
+  std::string ok_id, bad_id;
+  {
+    EngineConfig c; c.workers = 2; c.rate_limit = 1000; c.persist_path = path;
+    Engine e(c); e.add_problem(sum_prob()); e.add_user({"u", "alice", "", Tier::Free});
+    std::string err; CHECK_EQ(e.load_history(err), 0u); CHECK(err.empty());
+    e.start();
+    ok_id = e.submit({"sum", "u", "python", PY}).id;
+    bad_id = e.submit({"sum", "u", "python", "print(0)\n"}).id;
+    CHECK(e.wait_done(ok_id, 20000)); CHECK(e.wait_done(bad_id, 20000));
+    e.stop();
+  }
+  // Append garbage: a torn line and a non-object must be skipped, not fatal.
+  { std::ofstream o(path, std::ios::app); o << "{\"id\":\"sub_torn\",\"stat\n[1,2]\n"; }
+  {
+    EngineConfig c; c.workers = 1; c.persist_path = path;
+    Engine e(c); e.add_problem(sum_prob()); e.add_user({"u", "alice", "", Tier::Free});
+    std::string err;
+    CHECK_EQ(e.load_history(err), 2u);
+    CHECK(err.empty());
+    Json j;
+    CHECK(e.submission_json(ok_id, j));
+    CHECK_EQ(j.str_or("status"), std::string("ACCEPTED"));
+    CHECK(e.submission_json(bad_id, j));
+    CHECK_EQ(j.str_or("status"), std::string("WRONG_ANSWER"));
+    // Hidden test output stays redacted after a restore.
+    int hidden_seen = 0;
+    for (auto& r : j.find("executionLogs")->as_array())
+      if (r.find("testCase")->bool_or("isHidden")) { hidden_seen++; CHECK_EQ(r.str_or("stdout"), std::string()); }
+    CHECK_EQ(hidden_seen, 1);
+    CHECK_EQ(e.list_submissions(10).size(), 2u);
+    auto lb = e.leaderboard(5);
+    CHECK_EQ(lb[0].int_or("total"), 2); CHECK_EQ(lb[0].int_or("accepted"), 1);
+    // The SSE replay path works for a restored submission.
+    size_t idx = 0; std::vector<Json> evs; bool done = false;
+    CHECK(e.wait_events(ok_id, idx, evs, done, 1000));
+    CHECK(done);
+    CHECK_EQ(evs.back().str_or("type"), std::string("final"));
+  }
+  // The file was compacted: exactly the two good records remain.
+  { std::ifstream in(path); int n = 0; std::string l; while (std::getline(in, l)) n++; CHECK_EQ(n, 2); }
+  // A different data file with an unwritable directory reports an error instead of crashing.
+  { EngineConfig c; c.persist_path = "/nonexistent_dir/x.jsonl"; Engine e(c); std::string err; e.load_history(err); CHECK(!err.empty()); }
+  std::remove(path.c_str());
+}
