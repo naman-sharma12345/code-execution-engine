@@ -4,7 +4,7 @@ A dependency-free C++17 rewrite of the AetherRun execution backend. It serves th
 
 ## Build and test
     cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j2
-    ./build/aether_tests          # 78 tests
+    ./build/aether_tests          # 79 tests
     AETHER_PORT=3001 AETHER_PROBLEMS=data/problems.json ./build/aetherrun
 
 | Env var | Default | Meaning |
