@@ -44,6 +44,7 @@ struct EngineConfig {
   int rate_limit = 5;
   long long rate_window_ms = 60000;
   size_t max_submissions_kept = 5000;  // oldest finished submissions are evicted
+  std::string persist_path;            // optional JSONL history of finished submissions ("" = in-memory only)
 };
 
 class Engine {
@@ -56,6 +57,9 @@ class Engine {
   void load_problems_json(const std::string& json_text);  // throws JsonError
   void add_problem(Problem p);
   void add_user(User u);
+  // Load finished submissions from cfg.persist_path (compacting the file), then append new ones.
+  // Call after add_problem/add_user and before start(). Returns number restored; err set on I/O failure.
+  size_t load_history(std::string& err);
   void start();
   void stop();  // drains nothing: in-flight judge calls finish, queued jobs are dropped
 
@@ -83,6 +87,7 @@ class Engine {
   void process(const std::string& submission_id, int attempt, int max_attempts, bool& retry);
   void push_event(const std::string& id, Json ev);
   void evict_locked();
+  void persist(const Submission& s);
   static Json verdict_json(const Submission& s, const Problem* p);
   static Json case_json(const CaseResult& c, bool hidden);
 
@@ -105,6 +110,7 @@ class Engine {
   long long started_at_ = 0;
   long long next_id_ = 0;
   std::string run_tag_;
+  std::mutex persist_m_;
 };
 
 long long now_ms();  // wall clock, epoch ms
