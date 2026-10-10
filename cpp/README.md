@@ -42,6 +42,12 @@ corrupt lines are skipped, only the newest `AETHER_MAX_SUBMISSIONS` records are 
 compacted atomically. History, leaderboard and SSE replay of old submissions then survive restarts.
 Hidden-test output stays redacted. Unset, the engine is purely in-memory as before.
 
+## Graceful shutdown
+
+On SIGTERM/SIGINT the server finishes accepted submissions before exiting, for at most
+`AETHER_DRAIN_MS` (default 10000). Anything still unfinished after that is dropped, and the log says so.
+With `AETHER_PERSIST` set, drained submissions are written to the history file before exit.
+
 ## End-to-end latency
 
 Submit-to-verdict for the A + B problem (5 test cases), 5 runs each, 2 workers, on a 2-core VM,
