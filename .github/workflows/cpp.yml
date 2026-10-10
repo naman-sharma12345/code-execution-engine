@@ -34,7 +34,7 @@ jobs:
           SID=$(curl -sf -H 'Content-Type: application/json' -d '{"problemId":"prob_sum","language":"python","code":"a,b=map(int,input().split())\nprint(a+b)"}' localhost:3001/api/submissions | sed -E 's/.*"submissionId":"([^"]+)".*/\1/')
           for i in $(seq 1 30); do
             R=$(curl -sf localhost:3001/api/submissions/$SID)
-            echo "$R" | grep -q '"status":"ACCEPTED"' && echo "accepted" && exit 0
+            echo "$R" | grep -q '"status":"ACCEPTED"' && echo "accepted" && docker logs ae | grep 'network isolation' && exit 0
             sleep 1
           done
           echo "$R"; docker logs ae; exit 1
