@@ -152,6 +152,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(60rem 30rem at 85% -10%, oklch(0.62 0.19 295 / 0.07), transparent 60%),
+      radial-gradient(50rem 30rem at -10% 110%, oklch(0.74 0.16 155 / 0.04), transparent 60%);
+    background-attachment: fixed;
     font-feature-settings: "cv11", "ss01";
     font-variation-settings: "opsz" 32;
     -webkit-font-smoothing: antialiased;
