@@ -47,7 +47,7 @@ export function StatsBar() {
   const totalProcessed = stats.throughput.processed
 
   return (
-    <footer className="border-t border-border bg-sidebar/50 backdrop-blur-sm h-7 px-3 shrink-0 flex items-center overflow-x-auto scrollbar-xfine">
+    <footer className="border-t border-border bg-sidebar/70 backdrop-blur-md h-8 px-4 shrink-0 flex items-center overflow-x-auto scrollbar-xfine">
       <div className="flex items-center gap-5 text-[10px] font-mono text-muted-foreground/70 terminal-text whitespace-nowrap">
         <Metric
           label="Queue"
