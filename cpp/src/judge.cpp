@@ -17,6 +17,15 @@
 namespace aether {
 namespace {
 
+// Stored/streamed output is for display only (the checker already saw the full stdout), so keep the
+// first 16 KB. Without this a program printing up to the 1 MB stream limit costs ~3 MB of server
+// memory per kept submission (stored verdict plus event copies), which is a memory DoS at 5000 kept.
+constexpr size_t kStoredOutputBytes = 16 * 1024;
+std::string clip_for_storage(const std::string& s) {
+  if (s.size() <= kStoredOutputBytes) return s;
+  return s.substr(0, kStoredOutputBytes) + "\n[output truncated, " + std::to_string(s.size() - kStoredOutputBytes) + " more bytes]";
+}
+
 struct WorkDir {
   std::string path;
   // All work dirs live under one private root that is searchable and writable but not listable (mode 0300), so a
@@ -136,8 +145,8 @@ Verdict judge(const Problem& problem, Language lang, const std::string& code, co
     if (!o.timed_out && !o.memory_exceeded && !o.output_exceeded && !o.process_limit_exceeded && o.exit_code == 0 && o.term_signal == 0)
       match = checker.check(tc.expected, o.out).accepted;
     cres.status = classify(o, match);
-    cres.stdout_text = o.out;
-    cres.stderr_text = o.err;
+    cres.stdout_text = clip_for_storage(o.out);
+    cres.stderr_text = clip_for_storage(o.err);
     if (o.output_exceeded) cres.stderr_text += "\n[output limit exceeded]";
     if (o.process_limit_exceeded) cres.stderr_text += "\n[too many processes]";
     if (o.term_signal) cres.stderr_text += std::string("\n[terminated by signal ") + std::to_string(o.term_signal) + " (" + (strsignal(o.term_signal) ? strsignal(o.term_signal) : "?") + ")]";
