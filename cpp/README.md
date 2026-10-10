@@ -43,6 +43,12 @@ refuse. In that case programs run without it (set `AETHER_NO_NETNS=1` to turn it
 make a deployment fail loudly instead, run the tests with `AETHER_REQUIRE_NETNS=1` on the target host.
 For untrusted production use, also run the container with `--network none`.
 
+The server also marks itself non-dumpable (`PR_SET_DUMPABLE=0`), so even where user namespaces are
+refused, a submitted program cannot read the server's working directory, environment or memory through
+`/proc/<parent pid>/`. Before this, such a program could read the problem file, hidden expected outputs
+included. Files at a known absolute path are still readable by a same-uid program, so for real isolation
+run the engine in a container whose problem data is not readable by the sandbox user.
+
 ## Persistence (optional)
 
 Set `AETHER_PERSIST=/path/history.jsonl` and finished submissions (code, verdict, per-case results with
