@@ -92,6 +92,11 @@ Verdict judge(const Problem& problem, Language lang, const std::string& code, co
   };
 
   WorkDir wd;
+  // Error text from compilers and interpreters names the server's private work dir; show a neutral path instead.
+  auto scrub = [&](std::string t) {
+    for (size_t pos = 0; !wd.path.empty() && (pos = t.find(wd.path, pos)) != std::string::npos;) { t.replace(pos, wd.path.size(), "/sandbox"); pos += 8; }
+    return t;
+  };
   if (wd.path.empty()) { v.status = Status::Failed; v.error_message = "Could not create work directory"; v.infra_error = true; skipped(); return v; }
   const LanguageRunner& runner = get_runner(lang);
   if (!write_source(runner, wd.path, code)) {
@@ -103,7 +108,7 @@ Verdict judge(const Problem& problem, Language lang, const std::string& code, co
   if (!cr.success) {
     v.status = Status::Failed;
     v.error_message = "Compilation failed";
-    v.compile_output = cr.output;
+    v.compile_output = scrub(cr.output);
     v.infra_error = cr.unavailable;
     skipped();
     return v;
@@ -146,7 +151,7 @@ Verdict judge(const Problem& problem, Language lang, const std::string& code, co
       match = checker.check(tc.expected, o.out).accepted;
     cres.status = classify(o, match);
     cres.stdout_text = clip_for_storage(o.out);
-    cres.stderr_text = clip_for_storage(o.err);
+    cres.stderr_text = clip_for_storage(scrub(o.err));
     if (o.output_exceeded) cres.stderr_text += "\n[output limit exceeded]";
     if (o.process_limit_exceeded) cres.stderr_text += "\n[too many processes]";
     if (o.term_signal) cres.stderr_text += std::string("\n[terminated by signal ") + std::to_string(o.term_signal) + " (" + (strsignal(o.term_signal) ? strsignal(o.term_signal) : "?") + ")]";
