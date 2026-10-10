@@ -1,5 +1,5 @@
 // aetherrun: C++17 code execution engine. Configuration via environment:
-//   AETHER_PORT (3001)  AETHER_HOST (127.0.0.1)  AETHER_WORKERS (2)  AETHER_RATE_LIMIT (5 per window)  AETHER_MAX_SUBMISSIONS (5000)  AETHER_PROBLEMS (data/problems.json)
+//   AETHER_PORT (3001)  AETHER_HOST (127.0.0.1)  AETHER_WORKERS (2)  AETHER_RATE_LIMIT (5 per window)  AETHER_MAX_SUBMISSIONS (5000)  AETHER_PROBLEMS (data/problems.json)  AETHER_PERSIST (off; path to a JSONL history file)
 #include <signal.h>
 
 #include <cstdlib>
@@ -29,6 +29,7 @@ int main() {
   ec.workers = static_cast<int>(env_int("AETHER_WORKERS", 2, 1, 64));
   ec.rate_limit = static_cast<int>(env_int("AETHER_RATE_LIMIT", 5, 1, 1000000));
   ec.max_submissions_kept = static_cast<size_t>(env_int("AETHER_MAX_SUBMISSIONS", 5000, 1, 100000000));
+  if (const char* pp = std::getenv("AETHER_PERSIST")) ec.persist_path = pp;
   Engine engine(ec);
   const char* pf = std::getenv("AETHER_PROBLEMS");
   std::string path = pf ? pf : "data/problems.json";
@@ -38,6 +39,12 @@ int main() {
   try { engine.load_problems_json(ss.str()); } catch (const std::exception& e) { std::cerr << "bad problems file: " << e.what() << "\n"; return 2; }
   engine.add_user({"user_free", "demo_free", "demo_free@aether.run", Tier::Free});
   engine.add_user({"user_pro", "demo_pro", "demo_pro@aether.run", Tier::Premium});
+  if (!ec.persist_path.empty()) {
+    std::string perr;
+    size_t n = engine.load_history(perr);
+    if (!perr.empty()) { std::cerr << "persistence: " << perr << "\n"; return 2; }
+    std::cout << "restored " << n << " submissions from " << ec.persist_path << std::endl;
+  }
   engine.start();
 
   ServerConfig sc;
