@@ -91,6 +91,12 @@ void Engine::start() {
   for (int i = 0; i < n; i++) workers_.emplace_back([this, i] { worker_loop(i); });
 }
 
+bool Engine::drain(int timeout_ms) {
+  std::unique_lock<std::mutex> lk(m_);
+  auto idle = [&] { for (auto& [id, s] : subs_) if (!s->done) return false; return true; };
+  return cv_.wait_for(lk, std::chrono::milliseconds(timeout_ms), idle);
+}
+
 void Engine::stop() {
   if (!running_.exchange(false)) return;
   queue_.close();
