@@ -1,5 +1,5 @@
 // aetherrun: C++17 code execution engine. Configuration via environment:
-//   AETHER_PORT (3001)  AETHER_HOST (127.0.0.1)  AETHER_WORKERS (2)  AETHER_RATE_LIMIT (5 per window)  AETHER_MAX_SUBMISSIONS (5000)  AETHER_PROBLEMS (data/problems.json)  AETHER_PERSIST (off; path to a JSONL history file)
+//   AETHER_PORT (3001)  AETHER_HOST (127.0.0.1)  AETHER_WORKERS (2)  AETHER_RATE_LIMIT (5 per window)  AETHER_MAX_SUBMISSIONS (5000)  AETHER_PROBLEMS (data/problems.json)  AETHER_PERSIST (off; path to a JSONL history file)  AETHER_DRAIN_MS (10000)
 #include <signal.h>
 
 #include <cstdlib>
@@ -60,6 +60,10 @@ int main() {
   std::cout << "AetherRun (C++) listening on http://" << sc.host << ":" << server.port() << "  workers=" << ec.workers << std::endl;
   while (!g_stop) { struct timespec ts{0, 100 * 1000 * 1000}; nanosleep(&ts, nullptr); }
   std::cout << "shutting down" << std::endl;
+  // Stop taking new connections' work after letting accepted submissions finish (bounded).
+  int drain_ms = static_cast<int>(env_int("AETHER_DRAIN_MS", 10000, 0, 600000));
+  bool drained = engine.drain(drain_ms);
+  std::cout << (drained ? "drained" : "drain timed out, dropping unfinished submissions") << std::endl;
   server.stop();
   engine.stop();
   return 0;
