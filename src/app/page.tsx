@@ -219,7 +219,7 @@ export default function Home() {
         stats={stats}
       />
 
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-y-auto md:overflow-visible">
         <ProblemSidebar
           problems={problems}
           selectedProblemId={selectedProblemId}
@@ -230,7 +230,7 @@ export default function Home() {
         />
 
         {/* Center: problem + code editor (resizable vertical split) */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 min-h-[620px] md:min-h-0">
           <ResizablePanelGroup direction="vertical" className="h-full">
             <ResizablePanel defaultSize={55} minSize={20} className="min-h-0">
               <ProblemViewer problem={problemDetail} />
