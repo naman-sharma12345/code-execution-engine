@@ -26,12 +26,12 @@ A dependency-free C++17 rewrite of the execution backend lives in [`cpp/`](cpp/)
 
 ```bash
 cmake -S cpp -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j2
-./build/aether_tests                     # 66 tests
+./build/aether_tests                     # 79 tests
 AETHER_PORT=3001 AETHER_PROBLEMS=cpp/data/problems.json ./build/aetherrun
 AETHER_CPP_BACKEND=http://127.0.0.1:3001 npm run dev   # UI proxies /api/* to C++
 ```
 
-It fixes several bugs in the TypeScript engine (trailing-newline checker bug, live memory limit, fork-bomb and `setsid()` escape handling, hidden-test leakage). CI runs the suite plain, under ASAN/UBSAN, under TSAN, and against a built Docker image. See [`cpp/COMPARISON.md`](cpp/COMPARISON.md) for the full list.
+It fixes several bugs in the TypeScript engine (trailing-newline checker bug, live memory limit, fork-bomb and `setsid()` escape handling, hidden-test leakage) and adds optional JSONL persistence, graceful shutdown, a best-effort per-run network namespace, a private work-dir root, bounded output storage and a cross-language soak test (`cpp/tests/soak.py`). The sandbox is process-level, not a container: run it inside Docker or a VM for untrusted code (details in [`cpp/README.md`](cpp/README.md)). CI runs the suite plain, under ASAN/UBSAN, under TSAN, and against a built Docker image. See [`cpp/COMPARISON.md`](cpp/COMPARISON.md) for the full list.
 
 ## 🎯 What is AetherRun?
 
