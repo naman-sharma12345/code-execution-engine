@@ -139,3 +139,21 @@ TEST(judge_programs_cannot_list_other_work_dirs) {
   if (v.cases[0].stdout_text.find("DENIED") == std::string::npos) std::cerr << "  out=" << v.cases[0].stdout_text << " err=" << v.cases[0].stderr_text << "\n";
   CHECK(v.cases[0].stdout_text.find("DENIED") != std::string::npos);
 }
+
+TEST(judge_stored_output_is_truncated) {
+  Problem p = sum_problem(4000);
+  p.tests = {{"t0", "1 2\n", "x\n", false, 0}};
+  // ~600 KB of output, under the 1 MB stream limit: must be judged normally but stored truncated.
+  Verdict v = judge(p, Language::Python, "import sys\nsys.stdout.write('y'*600000)\nsys.stderr.write('e'*600000)\n");
+  CHECK_EQ(v.cases.size(), 1u);
+  CHECK(v.cases[0].stdout_text.size() < 20000u);
+  CHECK(v.cases[0].stderr_text.size() < 20000u);
+  CHECK(v.cases[0].stdout_text.find("output truncated") != std::string::npos);
+  CHECK(v.status == Status::WrongAnswer);  // the checker still saw the full output
+  // A correct answer with a long (but legal) expected output is still accepted.
+  Problem q = sum_problem(4000);
+  std::string big(100000, 'z');
+  q.tests = {{"t0", "1 2\n", big + "\n", false, 0}};
+  Verdict w = judge(q, Language::Python, "print('z'*100000)\n");
+  CHECK(w.status == Status::Accepted);
+}
