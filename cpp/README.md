@@ -4,10 +4,19 @@ A dependency-free C++17 rewrite of the AetherRun execution backend. It serves th
 
 ## Build and test
     cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j2
-    ./build/aether_tests          # 59 tests
+    ./build/aether_tests          # 78 tests
     AETHER_PORT=3001 AETHER_PROBLEMS=data/problems.json ./build/aetherrun
 
-Env: `AETHER_PORT`, `AETHER_HOST`, `AETHER_WORKERS`, `AETHER_RATE_LIMIT`, `AETHER_MAX_SUBMISSIONS` (finished submissions kept in memory, default 5000), `AETHER_PROBLEMS`.
+| Env var | Default | Meaning |
+|---|---|---|
+| `AETHER_PORT` / `AETHER_HOST` | 3001 / 127.0.0.1 | listen address |
+| `AETHER_WORKERS` | 2 | concurrent judge workers |
+| `AETHER_RATE_LIMIT` | 5 | submissions per user per minute |
+| `AETHER_MAX_SUBMISSIONS` | 5000 | finished submissions kept (oldest evicted) |
+| `AETHER_PROBLEMS` | data/problems.json | problem catalog |
+| `AETHER_PERSIST` | off | JSONL history file, see Persistence |
+| `AETHER_DRAIN_MS` | 10000 | max wait for in-flight submissions on shutdown |
+| `AETHER_NO_NETNS` | unset | `1` disables the per-run network namespace |
 
 Benchmark (2-core sandbox VM, 4 workers, Python submissions, 16 concurrent clients): 80/80 ACCEPTED, about 27 judged submissions per second end to end.
 
@@ -27,9 +36,10 @@ profile that allows `unshare`; the startup log tells you which case you are in.
 ASAN+UBSAN run clean on the json, checker, rate limiter, queue and engine suites (CI runs them). ThreadSanitizer on GCC 11 reports false races and a "double lock" on every `condition_variable` timed wait, because libtsan 11 does not intercept `pthread_cond_clockwait`. With the waits switched to `system_clock` the queue and engine suites are TSAN-clean, so the reports are tool noise, not engine bugs. Use GCC 13+ or clang for TSAN.
 
 ## Sandbox
-fork/exec per run with rlimits (CPU, file size, processes), its own process group, wall-clock kill, live memory monitoring, and an output cap. This is not a container: run it inside Docker or a VM for untrusted code.
+fork/exec per run with rlimits (CPU, file size, processes), its own process group, wall-clock kill, live memory monitoring, an output cap, an empty network namespace, a private work-dir root and a non-dumpable server (see below). This is not a container: run it inside Docker or a VM for untrusted code.
 
 ## Sandbox escape hardening
+See also Network isolation below.
 Runs are tagged with a unique environment marker. After every run, any leftover process carrying the marker is killed, including ones that called `setsid()` to leave the process group.
 
 ## Fixes over the TypeScript version
