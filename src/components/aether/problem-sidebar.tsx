@@ -47,7 +47,7 @@ export function ProblemSidebar({
   onSelectSubmission: (id: string) => void
 }) {
   return (
-    <aside className="w-72 border-r border-border bg-sidebar/40 flex flex-col shrink-0">
+    <aside className="w-full md:w-72 h-56 md:h-auto overflow-hidden border-b md:border-b-0 md:border-r border-border bg-sidebar/40 flex flex-col shrink-0">
       <ScrollArea className="flex-1 scrollbar-xfine">
         <div className="py-2">
           {/* Problems list */}
