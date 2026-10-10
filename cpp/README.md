@@ -34,6 +34,15 @@ Runs are tagged with a unique environment marker. After every run, any leftover 
 - Rate limit is charged only after validation.
 - Unknown tokens or user ids are rejected, not mapped to another user.
 
+## Network isolation
+
+Each sandboxed program runs in its own empty network namespace (`unshare(CLONE_NEWUSER|CLONE_NEWNET)`),
+so submitted code cannot reach the engine's own API, other host services or the internet. This is best
+effort: it needs unprivileged user namespaces, which some hosts and the default Docker seccomp profile
+refuse. In that case programs run without it (set `AETHER_NO_NETNS=1` to turn it off explicitly). To
+make a deployment fail loudly instead, run the tests with `AETHER_REQUIRE_NETNS=1` on the target host.
+For untrusted production use, also run the container with `--network none`.
+
 ## Persistence (optional)
 
 Set `AETHER_PERSIST=/path/history.jsonl` and finished submissions (code, verdict, per-case results with
