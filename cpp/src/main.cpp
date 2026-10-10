@@ -8,6 +8,7 @@
 #include <sstream>
 
 #include "aether/engine.hpp"
+#include "aether/sandbox.hpp"
 #include "aether/server.hpp"
 
 using namespace aether;
@@ -45,6 +46,8 @@ int main() {
     if (!perr.empty()) { std::cerr << "persistence: " << perr << "\n"; return 2; }
     std::cout << "restored " << n << " submissions from " << ec.persist_path << std::endl;
   }
+  std::cout << "network isolation for submissions: "
+            << (network_isolation_available() ? "on" : "OFF (user namespaces unavailable; run in a container with --network none)") << std::endl;
   engine.start();
 
   ServerConfig sc;
