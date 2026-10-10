@@ -157,3 +157,17 @@ TEST(judge_stored_output_is_truncated) {
   Verdict w = judge(q, Language::Python, "print('z'*100000)\n");
   CHECK(w.status == Status::Accepted);
 }
+
+TEST(judge_error_text_does_not_reveal_server_work_dir) {
+  auto p = sum_problem();
+  Verdict v = judge(p, Language::Python, "print(1+\n");
+  bool seen = false;
+  for (auto& c : v.cases) {
+    CHECK(c.stderr_text.find("aether-work-") == std::string::npos);
+    if (c.stderr_text.find("SyntaxError") != std::string::npos) seen = true;
+  }
+  CHECK(seen);
+  Verdict w = judge(p, Language::Cpp, "int main(){ not valid }");
+  CHECK(w.compile_output.find("aether-work-") == std::string::npos);
+  CHECK(!w.compile_output.empty());
+}
