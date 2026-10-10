@@ -61,6 +61,8 @@ class Engine {
   // Call after add_problem/add_user and before start(). Returns number restored; err set on I/O failure.
   size_t load_history(std::string& err);
   void start();
+  // Wait until every accepted submission has finished (or timeout_ms passes). Returns true if drained.
+  bool drain(int timeout_ms);
   void stop();  // drains nothing: in-flight judge calls finish, queued jobs are dropped
 
   SubmitResult submit(const SubmitRequest& r);
