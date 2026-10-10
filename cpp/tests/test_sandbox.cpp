@@ -216,3 +216,12 @@ TEST(sandbox_cannot_read_server_through_proc) {
   CHECK(r.out.find("LEAK") == std::string::npos);
   CHECK(r.out.find("SAFE environ") != std::string::npos);
 }
+
+TEST(sandbox_network_isolation_probe_matches_behaviour) {
+  bool avail = network_isolation_available();
+  setenv("AETHER_NO_NETNS", "1", 1);
+  CHECK(!network_isolation_available());  // explicit opt-out is honoured
+  unsetenv("AETHER_NO_NETNS");
+  CHECK_EQ(network_isolation_available(), avail);
+  std::cerr << "  network isolation available on this host: " << (avail ? "yes" : "no") << "\n";
+}
