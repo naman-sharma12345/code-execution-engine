@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <sched.h>
+#include <sys/prctl.h>
 #include <signal.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -181,6 +182,10 @@ static long total_tasks() {
 }
 
 RunOutcome run_sandboxed(const RunSpec& spec_in) {
+  // Make this process non-dumpable: /proc/<pid>/{cwd,environ,mem,fd} become unreadable to same-uid
+  // children, so a submitted program cannot read the server's files or memory through its parent.
+  // (exec resets the flag for the child itself, so the program still runs normally.)
+  prctl(PR_SET_DUMPABLE, 0);
   // RLIMIT_NPROC is per-uid, so use headroom above what exists now. This is the hard
   // backstop against fork bombs: the polling monitor alone cannot outrun exponential growth.
   RunSpec spec = spec_in;
